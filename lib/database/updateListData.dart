@@ -34,12 +34,14 @@ class DatabaseService {
       'receipt:': new_trip.items,
     });
   }
-  Future updateUserData(String first, String last, String email) async{
+  Future updateUserData(Cowboy new_cowboy) async{
     print(uuid);
-    return await userTestingCollection.doc(uuid).update({
-      'first_name': first,
-      'last_name': last,
-      'email': email,
+    return await userCollection.doc(uuid).update({
+      'first_name': new_cowboy.first_name,
+      'last_name': new_cowboy.last_name,
+      'email': new_cowboy.email,
+      'shopping_trips': new_cowboy.shopping_trips,
+      'friends': new_cowboy.friends,
     });
   }
   Future initializeUserData(Cowboy new_cowboy) async{
@@ -49,6 +51,7 @@ class DatabaseService {
       'last_name': new_cowboy.last_name,
       'email': new_cowboy.email,
       'shopping_trips': new_cowboy.shopping_trips,
+      'friends': new_cowboy.friends,
     });
   }
 

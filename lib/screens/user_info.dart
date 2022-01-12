@@ -3,7 +3,7 @@ import 'package:grocery_mule/components/rounded_ button.dart';
 import 'package:grocery_mule/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:grocery_mule/database/updateListData.dart';
-import 'package:grocery_mule/screens/lists.dart';
+import 'package:grocery_mule/classes/data_structures.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 
@@ -92,7 +92,8 @@ class _UserInfoScreenScreenState extends State<UserInfoScreen> {
                         onPressed: ()
                         async {
                           try {
-                            await DatabaseService(uuid: curUser.uid).updateUserData(firstName, lastName, email);
+                            Cowboy new_cowboy = Cowboy(curUser.uid, firstName, lastName, email);
+                            await DatabaseService(uuid: curUser.uid).updateUserData(new_cowboy);
                             print('moving to lists screen');
                             Navigator.pop(context);
                           }  catch (e) {
