@@ -176,7 +176,6 @@ class _ListsScreenState extends State<ListsScreen> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return CircularProgressIndicator();
                     }
-
                     return SafeArea(
                       child: Scrollbar(
                         isAlwaysShown: true,
@@ -256,7 +255,6 @@ class _ListsScreenState extends State<ListsScreen> {
                     context,
                     MaterialPageRoute(builder: (context) => CreateListScreen(true))
                 );
-
               },
             ),
           ),
