@@ -13,7 +13,7 @@ typedef StringVoidFunc = void Function(String,int);
 
 class CreateListScreen extends StatefulWidget {
   static String id = 'create_list_screen';
-  String uuid;
+  String trip_uuid;
   String initTitle;
   String initDescription;
   DateTime initDate;
@@ -26,8 +26,8 @@ class CreateListScreen extends StatefulWidget {
     initTitle = trip.title;
     initDescription = trip.description;
     initDate = trip.date;
-    uuid = trip.uuid;
-    print("createlist.dart constructor (uuid): "+uuid);
+    trip_uuid = trip.uuid;
+    print("createlist.dart constructor (uuid): "+trip_uuid);
   }
 
   @override
@@ -35,28 +35,18 @@ class CreateListScreen extends StatefulWidget {
 }
 class Item_front_end {
   int expand;
-  Map<String,int> quantity;
-  String food;
-  int id;
-  Item_front_end(int id,String name,List<String> users){  //pass in list of beneficiaries, food
+  Item item;
+  Item_front_end(String name, List<String> members){  //pass in list of beneficiaries, food
     expand = 0;
-    quantity = {};
-    users.forEach((element) {quantity[element] = 0;});
-    //quantity = {'Harry':0,'Praf':0,'Dhruv':0};
-    food = name;
-    this.id = id;
+    item = Item(name, 0, members);
   }
 }
 class _CreateListsScreenState extends State<CreateListScreen> {
-  String tripTitle;
-  String tripDescription;
-  DateTime tripDate;
-  String trip_id;
+  ShoppingTrip trip;
   var _tripTitleController;
   var _tripDescriptionController;
-  final String userID = FirebaseAuth.instance.currentUser.uid;
-  Map<int,Item_front_end> grocery_list = {};
-  List<String> users = [];
+  final String uuid = FirebaseAuth.instance.currentUser.uid;
+  Map<String,Item_front_end> frontend_list = {}; // name to frontend item
   static int item_id = 1;
   bool isAdd = false;
   bool delete_list = false;
@@ -76,15 +66,16 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     // TODO: implement initState
     _tripTitleController = TextEditingController()..text = widget.initTitle;
     _tripDescriptionController = TextEditingController()..text = widget.initDescription;
-    trip_id = widget.uuid;
-    tripTitle =  widget.initTitle;
-    tripDescription = widget.initDescription;
-    tripDate = widget.initDate;
-    users.add(FirebaseAuth.instance.currentUser.displayName);
+    trip = ShoppingTrip.withUUID(widget.trip_uuid, widget.initTitle, widget.initDate, widget.initDescription, uuid, []);
+
     //test code
-    users.add("Praf");
-    users.add("Dhruv");
-    grocery_list = {0:new Item_front_end(0,"apple",users)};
+    trip.beneficiaries.add("Praf");
+    trip.beneficiaries.add("Dhruv");
+
+    List<String> full_list = trip.beneficiaries;
+    full_list.add(trip.host);
+    // TODO swap out with sample item once items update properly
+    frontend_list = {'apple': Item_front_end('apple', full_list)};
 
     //end test code
     super.initState();
@@ -93,7 +84,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
         context: context,
-        initialDate: tripDate,
+        initialDate: trip.date,
         firstDate: DateTime(2021),
         lastDate: DateTime(2050),
         builder: (BuildContext context, Widget child) {
@@ -107,91 +98,49 @@ class _CreateListsScreenState extends State<CreateListScreen> {
           );
         }
     );
-    if (picked != null && picked != tripDate)
+    if (picked != null && picked != trip.date)
       setState(() {
-        tripDate = picked;
+        trip.date = picked;
       });
   }
 
-  Widget add_guest(){
-
-  }
-  void add_beneficiary(String name){
-    if(!users.contains(name))
+  void add_item(String name){
+    List<String> full_list = trip.beneficiaries;
+    full_list.add(trip.host);
+    Item_front_end new_item = new Item_front_end(name,full_list);
+    if(frontend_list[name] == null) {
       setState(() {
-        users.add(name);
-        //update backend here
-      });
-    else
-      print("beneficary already exists");
-  }
-  void delete_beneficiary(String name){
-    if(!users.contains(name))
-      setState(() {
-        users.remove(name);
-        //update backend here
-      });
-  }
-  void add_item(String food){
-    Item_front_end new_item = new Item_front_end(item_id,food,users);
-    if(grocery_list[item_id] == null) {
-      setState(() {
-        grocery_list[item_id] = new_item;
+        frontend_list[name] = new_item;
         item_id++;
-        //update backend here
+        //trip.addItemDirect(new_item.item);
       });
     }
     else
       print("item already exists");
   }
 
-  void delete_item(int id){
-
-    if(grocery_list[id] != null) {
+  void delete_item(String name){
+    if(frontend_list[name] != null) {
       setState(() {
-        grocery_list.remove(id);
-        //update backend here
+        frontend_list.remove(name);
+        trip.removeItem(name);
       });
     }
   }
 
-  //this function returns a unique id for a
-  //new item on the list, also need to increment the next id
-  int get_item_id(){
-
-  }
-
-  //called by backend to update front end item appearance
-  //usage: when one person changes a quantity on an item, it needs
-  //to be reflected on everyone's list
-  void update_front_list(int id, String person, int quantity){
-
-  }
-
-  //add in new item from backend
-  void add_list_backend(int id, String food, ){
-
-  }
-
-  //when the host invites a new bene,
-  //backend calls everyone else to update the bene list
-  void add_bene_backend(String bene){
-
-  }
-
-  Widget simple_item(Item_front_end item){
-    String food = item.food;
+  Widget simple_item(Item_front_end front_item){
+    String name = front_item.item.name;
     int quantity = 0;
-    item.quantity.forEach((key, value) {
-      quantity = quantity + value;
+    front_item.item.subitems.forEach((name, count) {
+      quantity = quantity + count;
     });
 
     return Dismissible(
-      key: Key(item.food),
+      key: Key(name),
       onDismissed: (direction) {
         // Remove the item from the data source.
         setState(() {
-          delete_item(item.id);
+          delete_item(name);
         });
       },
       confirmDismiss: (DismissDirection direction) async {
@@ -227,7 +176,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
           children: [
             Container(
               child: Text(
-                '$food',
+                '$name',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 20,
@@ -249,7 +198,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                     icon: const Icon(Icons.expand_more_sharp),
                     onPressed:
                         () =>(
-                        setState(() { item.expand = 1;}))
+                        setState(() { front_item.expand = 1;}))
                 )
             ),
           ],
@@ -296,16 +245,17 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     );
   }
 
-  Widget expanded_item(Item_front_end item){
-    String food = item.food;
+  Widget expanded_item(Item_front_end front_item){
+    String name = front_item.item.name;
     int quantity = 0;
-    item.quantity.forEach((key, value) {
+    front_item.item.subitems.forEach((key, value) {
       quantity = quantity + value;
+      front_item.item.quantity = quantity;
     });
     void updateUsrQuantity(String name, int number){
       setState(() {
-        item.quantity[name] = number;
-        //update backend here for real time change
+        front_item.item.subitems[name] = number;
+        // trip.addItemDirect(front_item.item);
       });
     };
     return Container(
@@ -321,7 +271,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
               children: [
                 Container(
                   child: Text(
-                    '$food',
+                    '$name',
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 20,
@@ -343,12 +293,12 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                         icon: const Icon(Icons.expand_less_sharp),
                       onPressed:
                         () =>(
-                        setState(() {item.expand = 0;}))
+                        setState(() {front_item.expand = 0;}))
                     )
                 ),
               ],
             ),
-          for(var entry in item.quantity.entries)
+          for(var entry in front_item.item.subitems.entries)
             indie_item(entry.key,entry.value,updateUsrQuantity)
         ],
       ),
@@ -424,7 +374,9 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    String host = users[0];
+    String host_uuid = trip.host;
+    List<String> full_list = trip.beneficiaries;
+    full_list.add(host_uuid);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -465,7 +417,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                               style: TextStyle(color: Colors.black),
                               controller: _tripTitleController,
                               onChanged: (value){
-                                tripTitle = value;
+                                trip.title = value;
                               }
 
                           ),
@@ -495,7 +447,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Text("${tripDate.toLocal()}".split(' ')[0]),
+                      Text("${trip.date.toLocal()}".split(' ')[0]),
                       SizedBox(
                         height: 20.0,
                       ),
@@ -535,7 +487,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                               style: TextStyle(color: Colors.black),
                               controller: _tripDescriptionController,
                               onChanged: (value){
-                                tripDescription = value;
+                                trip.description = value;
                               }
                           ),
                         )
@@ -565,7 +517,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Text(
-                          '$host',
+                          '$host_uuid',
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 20,
@@ -595,8 +547,8 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                     ),
                     Row(
                       children: [
-                        for(String name in users)
-                          if(name != users[0])
+                        for(String name in full_list)
+                          if(name != full_list[0])
                             Container(
                             child: Text(
                               '$name ',
@@ -650,8 +602,8 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                 if(isAdd)
                   create_item(),
                 //single_item(grocery_list[1]),
-                for(var key in grocery_list.keys)
-                  single_item(grocery_list[key]),
+                for(var key in frontend_list.keys)
+                  single_item(frontend_list[key]),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -682,14 +634,15 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                   width: 5,
                   child: RoundedButton(
                     onPressed: () {
-                      if(tripTitle != '') {
-                        var shopping_trip = new ShoppingTrip(tripTitle, tripDate, tripDescription, userID, []);
-                        shopping_trip.uuid = trip_id;
-                        // print("createlist.dart method (uuid): "+shopping_trip.uuid);
-                        // final listData = ListData(tripTitle, tripDescription, tripDate, trip_id);
-                        Navigator.pop(context, shopping_trip);
+                      if(trip.title != '') {
+                        frontend_list.forEach((name, fe_item) {
+                          // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
+                          trip.addItemDirect(fe_item.item);
+                        });
+                        // print('item: '+trip.items['apple'].quantity.toString());
+                        Navigator.pop(context, trip);
                       }else{
-                        print("triggered");
+                        // print("triggered");
                         showDialog(
                           context: context,
                           builder: (BuildContext context) {
@@ -721,7 +674,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                     onPressed: () async {
                       await check_delete(context);
                       if(delete_list) {
-                        delete(trip_id);
+                        delete(trip.uuid);
                         Navigator.pop(context);
                       }
                     },

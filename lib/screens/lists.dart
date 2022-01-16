@@ -45,20 +45,19 @@ class _ListsScreenState extends State<ListsScreen> {
     return StreamZip([host_lists, bene_lists]);
   }
 
-  void updateGridView(String tripTitle, String tripDescription, DateTime tripDate, String temp_uuid, bool new_trip) async {
+  void updateGridView(ShoppingTrip trip, bool new_trip) async {
     try {
       // ListData data = new ListData(tripTitle, tripDescription, tripDate, unique_id);
       var host = curUser.uid;
-      var beneficiaries = ['rag', 'raggy', 'ragger'];
-      ShoppingTrip temp_trip = new ShoppingTrip(tripTitle, tripDate, tripDescription, host, beneficiaries);
-      temp_trip.uuid = temp_uuid;
+      // print('updateGridView apple count: '+trip.items['apple'].quantity.toString());
+      print('tripid: '+trip.uuid);
       if(new_trip) {
-        await DatabaseService(uuid: temp_uuid).createShoppingTrip(temp_trip);
+        await DatabaseService(uuid: trip.uuid).createShoppingTrip(trip);
       } else {
-        await DatabaseService(uuid: temp_uuid).updateShoppingTrip(temp_trip);
+        await DatabaseService(uuid: trip.uuid).updateShoppingTrip(trip);
       }
     } catch (e) {
-      print(e.toString());
+      print('error in updateGridView: '+e.toString());
     }
   }
   @override
@@ -170,15 +169,22 @@ class _ListsScreenState extends State<ListsScreen> {
                                 streamSnapshot.docs[index]['description'],
                                 curUser.uid, []);
                             cur_trip.uuid = streamSnapshot.docs[index]['uuid'];
+                            streamSnapshot.docs[index]['items'].forEach((name, item) {
+                              print(item.runtimeType);
+                              Item temp_item = Item.withSubitems(item['name'], item['quantity'], item['beneficiaries']);
+                              cur_trip.items[temp_item.name] = temp_item;
+                            });
                             // print("lists.dart method (uuid): "+cur_trip.uuid);
                             //check if the curData's field is null, if so, set flag
                             //print("rig rag shig shag: "+cur_trip.uuid);
-                            final updatedData = await Navigator.push(
+                            final updated_trip = await Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => CreateListScreen(cur_trip))
                             );
-                            if (updatedData != null) {
-                              updateGridView(updatedData.title, updatedData.description, updatedData.date, cur_trip.uuid, false);
+                            //ShoppingTrip temp_trip = updated_trip as ShoppingTrip;
+                            //temp_trip.uuid = cur_trip.uuid;
+                            if (updated_trip != null) {
+                              updateGridView(updated_trip, false);
                             } else {
                               print('no changes made to be saved!');
                             }
@@ -202,7 +208,8 @@ class _ListsScreenState extends State<ListsScreen> {
                     context,
                     MaterialPageRoute(builder: (context) => CreateListScreen(new ShoppingTrip('', new DateTime.now(), '', curUser.uid, [])))
                 );
-                updateGridView(shopping_trip.title, shopping_trip.description, shopping_trip.date, shopping_trip.uuid, true);
+                print('before gridview item: '+shopping_trip.items['apple'].quantity.toString());
+                updateGridView(shopping_trip, true);
               },
             ),
           ),

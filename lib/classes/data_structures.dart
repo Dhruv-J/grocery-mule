@@ -19,6 +19,13 @@ class ShoppingTrip {
   ShoppingTrip.withUUID(this.uuid, this.title, this.date, this.description, this.host, this.beneficiaries) {
     items = <String, Item>{};
   }
+  ShoppingTrip.withMetadata(this.title, this.date, this.description, this.host) {
+    var uuider = Uuid();
+    uuid = uuider.v4();
+    items = <String, Item>{};
+    beneficiaries = <String>[];
+    items = <String, Item>{};
+  }
 
   addBeneficary(String bene_uuid) {
     beneficiaries.add(bene_uuid);
@@ -29,13 +36,16 @@ class ShoppingTrip {
   removeBeneficiary(String bene_uuid) {
     beneficiaries.remove(bene_uuid);
     items.forEach((name, item) {
-      item.addBeneficiary(bene_uuid);
+      item.removeBeneficiary(bene_uuid);
     });
   }
 
   addItem(String name,[int quantity=0]) {
-    Item new_item = Item(name, quantity, host, beneficiaries);
+    Item new_item = Item(name, quantity, beneficiaries);
     items[name] = new_item;
+  }
+  addItemDirect(Item item) {
+    items[item.name] = item;
   }
   removeItem(String name) {
     items.remove(name);
@@ -44,6 +54,14 @@ class ShoppingTrip {
   addReceipt(Receipt receipt) {
     this.receipt = receipt;
     // TODO when ML layer comes in, addReceipt can be the trigger to compute and send out venmos
+  }
+
+  Map<String, Map<String,dynamic>> getItemsMap() {
+    Map<String, Map<String,dynamic>> ret_map = <String, Map<String,dynamic>>{};
+    items.forEach((name, item) {
+      ret_map[name] = item.toMap();
+    });
+    return ret_map;
   }
 }
 
@@ -87,11 +105,13 @@ class Item {
   int quantity;
   Map<String, int> subitems; // uuid to individual quantity needed
 
-  Item(this.name, this.quantity, String init_user, List<String> beneficiaries) {
+  Item(this.name, this.quantity, List<String> beneficiaries) {
+    subitems = <String, int>{};
     beneficiaries.forEach((beneficiary) {
       subitems[beneficiary] = 0;
     });
   }
+  Item.withSubitems(this.name, this.quantity, this.subitems);
 
   addBeneficiary(String beneficiary) {
     subitems[beneficiary] = 0;
@@ -105,6 +125,14 @@ class Item {
   }
   decrementBeneficiary(String beneficiary) {
     subitems[beneficiary]--;
+  }
+
+  Map<String,dynamic> toMap() {
+    return {
+      "name": name,
+      "quantity": quantity,
+      "subitems": subitems,
+    };
   }
 }
 

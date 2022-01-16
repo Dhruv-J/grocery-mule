@@ -18,20 +18,19 @@ class DatabaseService {
       'description': new_trip.description,
       'host': new_trip.host,
       'beneficiaries': new_trip.beneficiaries,
-      'items': new_trip.items,
-      'receipt:': new_trip.items,
+      'items': new_trip.getItemsMap(),
+      'receipt:': new_trip.receipt,
     });
   }
   Future updateShoppingTrip(ShoppingTrip new_trip) async{
     return await tripCollection.doc(new_trip.uuid).update({
-      'uuid': new_trip.uuid,
       'date': new_trip.date,
       'title': new_trip.title,
       'description': new_trip.description,
       'host': new_trip.host,
       'beneficiaries': new_trip.beneficiaries,
-      'items': new_trip.items,
-      'receipt:': new_trip.items,
+      'items': new_trip.getItemsMap(),
+      'receipt:': new_trip.receipt,
     });
   }
   Future updateUserData(Cowboy new_cowboy) async{
@@ -54,5 +53,10 @@ class DatabaseService {
       'friends': new_cowboy.friends,
     });
   }
-
+  Future addTripToBeneficiary(String bene_uuid, String trip_uuid) async{
+    List<String> temp_list = [trip_uuid];
+    return await tripCollection.doc(bene_uuid).update({
+      'shopping_trips': FieldValue.arrayUnion(temp_list),
+    });
+  }
 }
