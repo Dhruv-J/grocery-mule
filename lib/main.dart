@@ -8,8 +8,11 @@ import 'package:grocery_mule/screens/personal_list.dart';
 import 'package:grocery_mule/screens/registration_screen.dart';
 import 'package:grocery_mule/screens/lists.dart';
 import 'package:grocery_mule/screens/createlist.dart';
+<<<<<<< HEAD
 import 'package:grocery_mule/providers/cowboy_provider.dart';
 import 'package:grocery_mule/providers/shopping_trip_provider.dart';
+=======
+>>>>>>> 9c6a93b (more backend funcs, start of friend frontend)
 import 'package:grocery_mule/screens/friend_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';

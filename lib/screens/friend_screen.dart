@@ -6,7 +6,6 @@ import 'package:grocery_mule/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-
 final CollectionReference userCollection = FirebaseFirestore.instance.collection('updated_users_test');
 
 class FriendScreen extends StatefulWidget {
