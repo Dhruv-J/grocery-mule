@@ -11,6 +11,8 @@ import 'package:grocery_mule/database/query.dart';
 import 'package:grocery_mule/screens/user_info.dart';
 import 'package:async/async.dart';
 
+import 'editlist.dart';
+
 
 
 class ListsScreen extends StatefulWidget {
@@ -45,21 +47,7 @@ class _ListsScreenState extends State<ListsScreen> {
     return StreamZip([host_lists, bene_lists]);
   }
 
-  void updateGridView(ShoppingTrip trip, bool new_trip) async {
-    try {
-      // ListData data = new ListData(tripTitle, tripDescription, tripDate, unique_id);
-      var host = curUser.uid;
-      // print('updateGridView apple count: '+trip.items['apple'].quantity.toString());
-      print('tripid: '+trip.uuid);
-      if(new_trip) {
-        await DatabaseService(uuid: trip.uuid).createShoppingTrip(trip);
-      } else {
-        await DatabaseService(uuid: trip.uuid).updateShoppingTrip(trip);
-      }
-    } catch (e) {
-      print('error in updateGridView: '+e.toString());
-    }
-  }
+
   @override
   Widget build(BuildContext context) {
     print('pulling data');
@@ -90,7 +78,7 @@ class _ListsScreenState extends State<ListsScreen> {
                 ListTile(
                   title: const Text('Edit Profile'),
                   onTap: () {
-                    Navigator.pop(context);
+                    //Navigator.pop(context);
                     Navigator.pushNamed(context, UserInfoScreen.id);
                   },
                 ),
@@ -177,17 +165,15 @@ class _ListsScreenState extends State<ListsScreen> {
                             // print("lists.dart method (uuid): "+cur_trip.uuid);
                             //check if the curData's field is null, if so, set flag
                             //print("rig rag shig shag: "+cur_trip.uuid);
-                            final updated_trip = await Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => CreateListScreen(cur_trip))
-                            );
-                            //ShoppingTrip temp_trip = updated_trip as ShoppingTrip;
-                            //temp_trip.uuid = cur_trip.uuid;
+                            /*final updated_trip =*/ await Navigator.push(context,MaterialPageRoute(builder: (context) => EditListScreen(cur_trip)));
+                            /*
                             if (updated_trip != null) {
                               updateGridView(updated_trip, false);
                             } else {
                               print('no changes made to be saved!');
                             }
+                            */
+
                           },
                         ),
                       );
@@ -204,12 +190,11 @@ class _ListsScreenState extends State<ListsScreen> {
             child: FloatingActionButton(
               child: const Icon(Icons.add),
               onPressed: () async {
-                final shopping_trip = await Navigator.push(
+                await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CreateListScreen(new ShoppingTrip('', new DateTime.now(), '', curUser.uid, [])))
+                    MaterialPageRoute(builder: (context) => CreateListScreen(new ShoppingTrip('', new DateTime.now(), '', curUser.uid, []),true))
                 );
-                print('before gridview item: '+shopping_trip.items['apple'].quantity.toString());
-                updateGridView(shopping_trip, true);
+
               },
             ),
           ),

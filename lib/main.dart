@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:grocery_mule/screens/confirm_email.dart';
+import 'package:grocery_mule/screens/editlist.dart';
 import 'package:grocery_mule/screens/user_info.dart';
 import 'package:grocery_mule/screens/welcome_screen.dart';
 import 'package:grocery_mule/screens/login_screen.dart';
@@ -55,7 +56,8 @@ class _GroceryMuleState extends State<GroceryMule>{
         LoginScreen.id: (context) => LoginScreen(),
         RegistrationScreen.id: (context) => RegistrationScreen(),
         ListsScreen.id: (context) => ListsScreen(),
-        CreateListScreen.id: (context) => CreateListScreen(null),
+        CreateListScreen.id: (context) => CreateListScreen(null,null),
+        EditListScreen.id: (context) => EditListScreen(null),
         UserInfoScreen.id: (context) => UserInfoScreen(),
         ConfirmEmailScreen.id: (context) => ConfirmEmailScreen(),
       },
