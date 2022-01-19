@@ -202,7 +202,6 @@ class _ListsScreenState extends State<ListsScreen> {
                                 ],
                               ),
 
-
                               child: ListTile(
                                 title: Text(
                                   '\n${snapshot.data.docs[index]['title']}\n'

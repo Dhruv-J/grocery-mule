@@ -27,7 +27,6 @@ class EditListScreen extends StatefulWidget {
 }
 
 
-
 class _EditListsScreenState extends State<EditListScreen> {
   var _tripTitleController;
   var _tripDescriptionController;
@@ -131,7 +130,6 @@ class _EditListsScreenState extends State<EditListScreen> {
       onDismissed: (direction) {
         context.read<ShoppingTrip>().removeItem(name);
         // Remove the item from the data source.
-
       },
       confirmDismiss: (DismissDirection direction) async {
         return await showDialog(
@@ -183,16 +181,12 @@ class _EditListsScreenState extends State<EditListScreen> {
                     ),
                   ),
                 ),
-
               ],
             )),
       ),
       background: Container(color: Colors.red),
     );
   }
-
-
-
   Widget indie_item(String uid, int number,StringVoidFunc callback){
     String name = uid_name[uid];
     return Container(
@@ -256,7 +250,6 @@ class _EditListsScreenState extends State<EditListScreen> {
     );
   }
 
-
   Widget _buildPanel() {
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
@@ -276,7 +269,6 @@ class _EditListsScreenState extends State<EditListScreen> {
               isExpanded: item.isExpanded,
             );
           }).toList(),
-
     );
   }
 
@@ -350,7 +342,6 @@ class _EditListsScreenState extends State<EditListScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     //full_list.add(host_uuid);
     return Masterlist(context);
   }
@@ -521,7 +512,6 @@ class _EditListsScreenState extends State<EditListScreen> {
 
                 ],
               ),
-
             ],
           ),
         ),
