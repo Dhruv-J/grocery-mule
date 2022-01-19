@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:grocery_mule/components/rounded_ button.dart';
 import 'package:grocery_mule/constants.dart';
 import 'package:grocery_mule/screens/createlist.dart';
+import 'package:grocery_mule/screens/friend_screen.dart';
 import 'package:grocery_mule/screens/welcome_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:grocery_mule/classes/data_structures.dart';
@@ -74,6 +75,13 @@ class _ListsScreenState extends State<ListsScreen> {
                       fontSize: 20
                     ),
                   ),
+                ),
+                ListTile(
+                  title: const Text('Cowamigos'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, FriendScreen.id);
+                  },
                 ),
                 ListTile(
                   title: const Text('Edit Profile'),

@@ -39,8 +39,6 @@ class DatabaseService {
       'first_name': new_cowboy.first_name,
       'last_name': new_cowboy.last_name,
       'email': new_cowboy.email,
-      'shopping_trips': new_cowboy.shopping_trips,
-      'friends': new_cowboy.friends,
     });
   }
   Future initializeUserData(Cowboy new_cowboy) async{
@@ -51,12 +49,42 @@ class DatabaseService {
       'email': new_cowboy.email,
       'shopping_trips': new_cowboy.shopping_trips,
       'friends': new_cowboy.friends,
+      'requests': new_cowboy.requests,
     });
   }
-  Future addTripToBeneficiary(String bene_uuid, String trip_uuid) async{
+  Future addTripToUser(String user_uuid, String trip_uuid) async{
     List<String> temp_list = [trip_uuid];
-    return await tripCollection.doc(bene_uuid).update({
+    return await tripCollection.doc(user_uuid).update({
       'shopping_trips': FieldValue.arrayUnion(temp_list),
+    });
+  }
+  Future removeTripFromUser(String user_uuid, String trip_uuid) async{
+    return await userCollection.doc(user_uuid).update({
+      'shopping_trips': FieldValue.arrayRemove({}.remove(trip_uuid)),
+    });
+  }
+  Future sendFriendRequest(String friend_uuid, String requester_uuid) async{
+    List<String> temp_list = [requester_uuid];
+    return await userCollection.doc(friend_uuid).update({
+      'requests': FieldValue.arrayUnion(temp_list),
+    });
+  }
+  Future acceptFriendRequest(String friend_uuid, String requester_uuid, String requester_name) async{
+    List<String> request_list = [requester_uuid];
+    return await userCollection.doc(friend_uuid).update({
+      'requests': FieldValue.arrayRemove(request_list),
+      'friends.$requester_uuid': requester_name,
+    });
+  }
+  Future denyFriendRequest(String friend_uuid, String requester_uuid) async{
+    List<String> request_list = [requester_uuid];
+    return await userCollection.doc(friend_uuid).update({
+      'requests': FieldValue.arrayRemove(request_list),
+    });
+  }
+  Future removeFriend(String friend_uuid, String toremove_uuid) async{
+    return await userCollection.doc(friend_uuid).update({
+      'friends': FieldValue.arrayRemove({}.remove(toremove_uuid)),
     });
   }
 }

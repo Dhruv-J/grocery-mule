@@ -72,10 +72,12 @@ class Cowboy {
   String email;
   List<String> shopping_trips;
   Map<String, String> friends; // uuid to first name
+  List<String> requests; // uuid to first_last
 
   Cowboy(this.uuid, this.first_name, this.last_name, this.email) {
     shopping_trips = <String>[];
     friends = <String, String>{};
+    requests = <String>[];
   }
 
   addTrip(String trip_uuid) {
