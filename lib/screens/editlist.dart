@@ -503,7 +503,6 @@ class _EditListsScreenState extends State<EditListScreen> {
                       width: 150,
                       child: RoundedButton(
                         onPressed: () {
-
                         },
                         title: "Checkout",
                       ),

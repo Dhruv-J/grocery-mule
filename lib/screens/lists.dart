@@ -91,7 +91,6 @@ class _ListsScreenState extends State<ListsScreen> {
    final  Stream<QuerySnapshot<Map<String, dynamic>>> _list =  FirebaseFirestore.instance.collection('shopping_trips_test').snapshots();
 
 
-
   @override
   Widget build(BuildContext context) {
     print(context.watch<Cowboy>().shoppingTrips);
