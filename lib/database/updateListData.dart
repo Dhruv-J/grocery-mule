@@ -23,6 +23,7 @@ class DatabaseService {
     });
   }
   Future updateShoppingTrip(ShoppingTrip new_trip) async{
+    print(new_trip.getItemsMap());
     return await tripCollection.doc(new_trip.uuid).update({
       'date': new_trip.date,
       'title': new_trip.title,
@@ -54,13 +55,15 @@ class DatabaseService {
   }
   Future addTripToUser(String user_uuid, String trip_uuid) async{
     List<String> temp_list = [trip_uuid];
-    return await tripCollection.doc(user_uuid).update({
+    print("made here");
+    return await userCollection.doc(user_uuid).update({
       'shopping_trips': FieldValue.arrayUnion(temp_list),
     });
   }
   Future removeTripFromUser(String user_uuid, String trip_uuid) async{
+    List<String> delete_list = [trip_uuid];
     return await userCollection.doc(user_uuid).update({
-      'shopping_trips': FieldValue.arrayRemove({}.remove(trip_uuid)),
+      'shopping_trips': FieldValue.arrayRemove(delete_list),
     });
   }
   Future sendFriendRequest(String friend_uuid, String requester_uuid) async{

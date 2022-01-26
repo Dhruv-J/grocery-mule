@@ -49,6 +49,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   var _tripTitleController;
   var _tripDescriptionController;
   final String uuid = FirebaseAuth.instance.currentUser.uid;
+  String host = FirebaseAuth.instance.currentUser.displayName;
   Map<String,Item_front_end> frontend_list = {}; // name to frontend item
   bool isAdd = false;
   bool delete_list = false;
@@ -61,7 +62,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
         .then((value) => print('deleted'))
         .catchError((error)=>print("failed"))
     ;
-
+    await DatabaseService(uuid: curUser.uid).removeTripFromUser(curUser.uid,tripID);
   }
   @override
   void initState() {
@@ -74,10 +75,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     trip.beneficiaries.add("Praf");
     trip.beneficiaries.add("Dhruv");
 
-    List<String> full_list = trip.beneficiaries;
-    full_list.add(trip.host);
-    // TODO swap out with sample item once items update properly
-    frontend_list = {'apple': Item_front_end('apple', full_list)};
+    //List<String> full_list = trip.beneficiaries;
     //end test code
     super.initState();
   }
@@ -108,11 +106,10 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   void updateGridView(ShoppingTrip trip, bool new_trip) async {
     try {
       // ListData data = new ListData(tripTitle, tripDescription, tripDate, unique_id);
-      var host = curUser.uid;
-      // print('updateGridView apple count: '+trip.items['apple'].quantity.toString());
-      print('tripid: '+trip.uuid);
+      // print('updateGridView DatabaseServiceapple count: '+trip.items['apple'].quantity.toString());
       if(new_trip) {
         await DatabaseService(uuid: trip.uuid).createShoppingTrip(trip);
+        await DatabaseService(uuid: curUser.uid).addTripToUser(curUser.uid,trip.uuid);
       } else {
         await DatabaseService(uuid: trip.uuid).updateShoppingTrip(trip);
       }
@@ -123,9 +120,8 @@ class _CreateListsScreenState extends State<CreateListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String host_uuid = trip.host;
-    List<String> full_list = trip.beneficiaries;
-    full_list.add(host_uuid);
+    String host_uuid = host;
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -298,7 +294,10 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                       await check_delete(context);
                       if(delete_list) {
                         delete(trip.uuid);
-                        Navigator.pop(context);
+                        Navigator.of(context).popUntil((route){
+                          return route.settings.name == ListsScreen.id;
+                        });
+                        Navigator.pushNamed(context, ListsScreen.id);
                       }
                     },
                     title: "Delete List",

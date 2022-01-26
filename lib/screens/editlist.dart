@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:number_inc_dec/number_inc_dec.dart';
 
+import '../database/query.dart';
+import '../database/updateListData.dart';
 import 'createlist.dart';
 typedef StringVoidFunc = void Function(String,int);
 
@@ -19,7 +21,7 @@ class EditListScreen extends StatefulWidget {
   String initTitle;
   String initDescription;
   DateTime initDate;
-
+  String host = null;
   //createList has the ids
   //when createList has a list that's already filled
   //keep a field of the original id, but generate a new id
@@ -29,6 +31,7 @@ class EditListScreen extends StatefulWidget {
     initDescription = trip.description;
     initDate = trip.date;
     trip_uuid = trip.uuid;
+
     print("createlist.dart constructor (title): "+initTitle);
   }
 
@@ -48,10 +51,14 @@ class _EditListsScreenState extends State<EditListScreen> {
   var _tripTitleController;
   var _tripDescriptionController;
   final String uuid = FirebaseAuth.instance.currentUser.uid;
-  Map<String,Item_front_end> frontend_list = {}; // name to frontend item
 
+  Map<String,Item_front_end> frontend_list = {}; // name to frontend item
+  List<String> full_list = [];
   bool isAdd = false;
   bool invite_guest = false;
+  DatabaseService service  = new DatabaseService();
+  UserQuery query;
+  String host_name = null;
   Future<void> delete(String tripID) async{
     await FirebaseFirestore.instance
         .collection('shopping_trips_test')
@@ -62,8 +69,10 @@ class _EditListsScreenState extends State<EditListScreen> {
     ;
 
   }
+
+
   @override
-  void initState() {
+  Future<void> initState() {
     // TODO: implement initState
     _tripTitleController = TextEditingController()..text = widget.initTitle;
     _tripDescriptionController = TextEditingController()..text = widget.initDescription;
@@ -72,11 +81,26 @@ class _EditListsScreenState extends State<EditListScreen> {
     //test code
     trip.beneficiaries.add("Praf");
     trip.beneficiaries.add("Dhruv");
-
-    List<String> full_list = trip.beneficiaries;
-    full_list.add(trip.host);
+    trip.beneficiaries.forEach((element) {
+      full_list.add(element);
+    });
     // TODO swap out with sample item once items update properly
     frontend_list = {'apple': Item_front_end('apple', full_list)};
+    query = new UserQuery(uuid,"");
+    FirebaseFirestore.instance
+        .collection('updated_users_test')
+        .doc(trip.host)
+        .get()
+        .then((DocumentSnapshot snap) {
+      if (snap.exists) {
+        setState(() {
+          host_name = snap['first_name'];
+          full_list.add(host_name);
+        });
+      } else {
+        print('Document does not exist on the database');
+      }
+    });
 
     //end test code
     super.initState();
@@ -112,13 +136,12 @@ class _EditListsScreenState extends State<EditListScreen> {
   }
 
   void add_item(String name){
-    List<String> full_list = trip.beneficiaries;
-    full_list.add(trip.host);
+
     Item_front_end new_item = new Item_front_end(name,full_list);
     if(frontend_list[name] == null) {
       setState(() {
         frontend_list[name] = new_item;
-        //trip.addItemDirect(new_item.item);
+        trip.addItemDirect(new_item.item);
       });
     }
     else
@@ -393,9 +416,10 @@ class _EditListsScreenState extends State<EditListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String host_uuid = trip.host;
-    List<String> full_list = trip.beneficiaries;
-    full_list.add(host_uuid);
+    if(host_name == null){
+      return CircularProgressIndicator();
+    }
+    //full_list.add(host_uuid);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -439,7 +463,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
-                        'Harry',
+                        '$host_name',
                         style: TextStyle(
                           color: Colors.black,
                           fontSize: 20,
@@ -469,8 +493,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                   ),
                   Row(
                     children: [
-                      for(String name in full_list)
-                        if(name != full_list[0])
+                      for(String name in trip.beneficiaries)
                           Container(
                             child: Text(
                               '$name ',
@@ -562,6 +585,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                         // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
                         trip.addItemDirect(fe_item.item);
                       });
+                      //service.updateShoppingTrip(trip);
                       // print('item: '+trip.items['apple'].quantity.toString());
                       //Navigator.pop(context, trip);
                       //Navigator.popUntil(context, ModalRoute.withName(ListsScreen.id));

@@ -37,6 +37,26 @@ class _ListsScreenState extends State<ListsScreen> {
     super.initState();
   }
 
+  /*
+  Future<Stream<List<QuerySnapshot<Object>>>> getData()  {
+    //get snapshot of the user
+    //Stream host_info = FirebaseFirestore.instance.collection('updated_users_test').doc(curUser.uid).snapshots();
+    //snapshot of shopping trips belongs to the user
+    //List list_id = await host_info.elementAt(5);
+    // List<String> master_list = await host_info.['shopping_trips'];
+    //print(list_id);
+    //Stream host_lists = await FirebaseFirestore.instance.collection('shopping_trips_test').where('host',isEqualTo:curUser.uid).snapshots();
+    //List<Stream> masterlist = [];
+    //list_id.forEach((id) {
+    //  Stream temp = FirebaseFirestore.instance.collection('shopping_trips_test').doc(id).snapshots();
+    //  masterlist.add(temp);
+    //});
+    Stream host_lists = FirebaseFirestore.instance.collection('shopping_trips_test').where('host', isEqualTo: curUser.uid).snapshots();
+    Stream bene_lists = FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: curUser.uid).snapshots();
+    return StreamZip([host_lists,bene_lists]);
+    //return StreamZip([host_lists]);
+  }
+  */
   Stream<List<QuerySnapshot>> getData() {
     Stream host_lists = FirebaseFirestore.instance.collection('shopping_trips_test').where('host', isEqualTo: curUser.uid).snapshots();
     Stream bene_lists = FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: curUser.uid).snapshots();
@@ -47,6 +67,7 @@ class _ListsScreenState extends State<ListsScreen> {
     testie.getUserByUUID().then((value) => print(value.first_name));*/
     return StreamZip([host_lists, bene_lists]);
   }
+
 
 
   @override
@@ -98,7 +119,7 @@ class _ListsScreenState extends State<ListsScreen> {
                       await _auth.signOut();
                       print('User signed out');
                     }
-                    Navigator.pop(context);
+                    //Navigator.pop(context);
                     Navigator.of(context).popUntil((route){
                       return route.settings.name == WelcomeScreen.id;
                     });
