@@ -393,7 +393,6 @@ class _EditListsScreenState extends State<EditListScreen> {
                     children: [
                       (context.watch<Cowboy>().firstName == null)?
                       CircularProgressIndicator():
-
                       Text(
                         // may show an old name if name has been updated extremely recently
                         '$hostFirstName',
