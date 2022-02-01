@@ -70,12 +70,32 @@ class _EditListsScreenState extends State<EditListScreen> {
 
   }
 
+  void initTrip() async {
+    // we use the try catch to get an error in case an error happens with firestore
+    try {
+      final tripShot = await FirebaseFirestore.instance.collection('shopping_trips_test').doc(widget.trip_uuid).get();
+      //Map<String,String> temp_sub = Map<String, String>.from(tripShot['beneficiaries']);
 
+      trip = ShoppingTrip.withItems(
+          tripShot['uuid'],
+        tripShot['title'],
+        DateTime.parse(tripShot['date']),
+        tripShot['description'],
+        tripShot['host'],
+        tripShot['beneficiaries'],
+        tripShot['items'],
+      );
+    }catch(e){
+      print(e);
+    }
+    print(trip.items);
+  }
   @override
-  Future<void> initState() {
+  void initState() {
     // TODO: implement initState
     _tripTitleController = TextEditingController()..text = widget.initTitle;
     _tripDescriptionController = TextEditingController()..text = widget.initDescription;
+    initTrip();
     trip = ShoppingTrip.withUUID(widget.trip_uuid, widget.initTitle, widget.initDate, widget.initDescription, uuid, []);
 
     //test code
@@ -416,9 +436,7 @@ class _EditListsScreenState extends State<EditListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if(host_name == null){
-      return CircularProgressIndicator();
-    }
+
     //full_list.add(host_uuid);
     return Scaffold(
       appBar: AppBar(
@@ -462,6 +480,9 @@ class _EditListsScreenState extends State<EditListScreen> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
+                      (host_name == null)?
+                       CircularProgressIndicator():
+
                       Text(
                         '$host_name',
                         style: TextStyle(
@@ -580,37 +601,14 @@ class _EditListsScreenState extends State<EditListScreen> {
                 width: 5,
                 child: RoundedButton(
                   onPressed: () {
-                    if(trip.title != '') {
+
                       frontend_list.forEach((name, fe_item) {
                         // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
                         trip.addItemDirect(fe_item.item);
                       });
-                      //service.updateShoppingTrip(trip);
-                      // print('item: '+trip.items['apple'].quantity.toString());
-                      //Navigator.pop(context, trip);
-                      //Navigator.popUntil(context, ModalRoute.withName(ListsScreen.id));
-                      //Navigator.of(context).popUntil((route){return route.settings.name == ListsScreen.id;});
-                      //Navigator.pushNamed(context, ListsScreen.id);
+                      service.updateShoppingTrip(trip);
                       Navigator.pop(context, trip);
-                    }else{
-                      // print("triggered");
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text("List name cannot be empty"),
-                            actions: [
-                              TextButton(
-                                child: Text("OK"),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    }
+
                   },
                   title: "Update List",
                 ),

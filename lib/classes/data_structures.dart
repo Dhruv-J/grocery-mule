@@ -27,6 +27,9 @@ class ShoppingTrip {
     items = <String, Item>{};
   }
 
+  ShoppingTrip.withItems(this.uuid, this.title, this.date, this.description, this.host, this.beneficiaries, this.items) {
+  }
+
   addBeneficary(String bene_uuid) {
     beneficiaries.add(bene_uuid);
     items.forEach((name, item) {
