@@ -1,3 +1,5 @@
+import 'dart:collection';
+import 'dart:convert';
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
 import 'package:grocery_mule/constants.dart';
@@ -15,20 +17,38 @@ class _FriendScreenState extends State<FriendScreen> with SingleTickerProviderSt
   String search_query;
   int num_requests;
   List<String> friend_uuids;
+  Stream<QuerySnapshot> friendData;
   @override
   void initState() {
     super.initState();
     num_requests = 0;
     friend_uuids = <String>['placeholder'];
+    friendData = getData();
   }
   Stream<QuerySnapshot> getData() {
     CollectionReference user_collection = FirebaseFirestore.instance.collection('updated_users_test');
-    DocumentSnapshot user_snapshot;
-    user_collection.doc('yTWmoo2Qskf3wFcbxaJYUt9qrZM2').get().then((value) => user_snapshot);
-    if(user_snapshot != null) {
-      friend_uuids = (user_snapshot['friends'] as Map<String, dynamic>).keys;
+    Map<String, dynamic> temp_map;
+    List<String> temp_list = <String>['placeholder'];
+    int count = 0;
+    user_collection.doc('yTWmoo2Qskf3wFcbxaJYUt9qrZM2').get().then((value) => {
+      if(value.data() != null) {
+        print(value['friends']),
+        temp_map = new Map<String, dynamic>.from(value['friends']),
+        temp_map.keys.forEach((friend_uuid) {
+          print(friend_uuid);
+          temp_list.add(friend_uuid);
+          count++;
+        }),
+        this.friend_uuids = temp_list,
+        print(this.friend_uuids.length),
+      },
+    });
+    print('friend_screen friends list length: '+friend_uuids.length.toString());
+    if(friend_uuids.length>10) {
+      return user_collection.where('uuid', whereIn: friend_uuids.sublist(1, 11)).snapshots();
+    } else {
+      return user_collection.where('uuid', whereIn: friend_uuids).snapshots();
     }
-    return user_collection.where('uuid', whereIn: friend_uuids).snapshots();
   }
   @override
   Widget build(BuildContext context) {
@@ -101,49 +121,47 @@ class _FriendScreenState extends State<FriendScreen> with SingleTickerProviderSt
             Row(), // row for search results // conditional
             SizedBox(
               height: 24.0,
+              child: Text('Friends'),
             ),
             Container(
-              child: StreamBuilder(
-                stream: getData(),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: friendData,
                 builder: (context, AsyncSnapshot<QuerySnapshot> listsnapshot) {
-                  List<QueryDocumentSnapshot> snapshot_data = <QueryDocumentSnapshot>[];
-                  if (listsnapshot.hasData) {
-                    snapshot_data = listsnapshot.data.docs;
+                  if (listsnapshot.connectionState == ConnectionState.done) {
+                    List<QueryDocumentSnapshot> snapshot_data = <QueryDocumentSnapshot>[];
+                    if (listsnapshot.hasData) {
+                      snapshot_data = listsnapshot.data.docs;
+                    }
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(2),
+                      // scrollDirection: Axis.vertical,
+                      shrinkWrap: true,
+                      itemCount: snapshot_data.length,
+                      itemBuilder: (context, int index) {
+                        return Container(
+                          child: Row(
+                            children: <Widget>[
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(snapshot_data[index]['first_name']+' '+snapshot_data[index]['last_name']),
+                                  SizedBox(height: 1.0,),
+                                  Text(snapshot_data[index]['email']),
+                                  // Text('cringelord'),
+                                ],
+                              ),
+                            ],
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.deepOrange),
+                            borderRadius: BorderRadius.all(Radius.circular(6.0)),
+                          ),
+                        );
+                      },
+                    );
                   }
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(2),
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemCount: snapshot_data.length,
-                    itemBuilder: (context, int index) {
-                      return Container(
-                        child: Row(
-                          children: <Widget>[
-                            Column(
-                              children: [
-                                Text(snapshot_data[index]['first_name']+' '+snapshot_data[index]['last_name']),
-                                SizedBox(height: 1.0,),
-                                Text(snapshot_data[index]['email']),
-                              ],
-                            ),
-                            /*Row(
-                              children: <Widget>[
-                                Text(snapshot_data[index]['first_name']+' '+snapshot_data[index]['last_name']),
-                              ],
-                            ),
-                            SizedBox(
-                              height: 1.0,
-                            ),
-                            Row(
-                              children: <Widget>[
-                                Text(snapshot_data[index]['email']),
-                              ],
-                            ),*/
-                          ],
-                        ),
-                      );
-                    },
-                  );
+                  return CircularProgressIndicator();
                 }
               ),
             ), // container for listview of friends list
