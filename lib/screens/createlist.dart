@@ -1,17 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grocery_mule/components/rounded_ button.dart';
-import 'package:grocery_mule/constants.dart';
+import 'package:grocery_mule/providers/cowboy_provider.dart';
 import 'package:grocery_mule/screens/editlist.dart';
 import 'dart:async';
 import 'package:grocery_mule/screens/lists.dart';
-import 'package:grocery_mule/classes/ListData.dart';
-import 'package:grocery_mule/classes/data_structures.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:grocery_mule/providers/cowboy_provider.dart';
+import 'package:grocery_mule/providers/shopping_trip_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:number_inc_dec/number_inc_dec.dart';
 
-import '../database/updateListData.dart';
 typedef StringVoidFunc = void Function(String,int);
 
 class CreateListScreen extends StatefulWidget {
@@ -27,13 +27,8 @@ class CreateListScreen extends StatefulWidget {
   //when createList has a list that's already filled
   //keep a field of the original id, but generate a new id
   //in the return variable
-  CreateListScreen(ShoppingTrip trip, bool newList) {
-    initTitle = trip.title;
-    initDescription = trip.description;
-    initDate = trip.date;
-    trip_uuid = trip.uuid;
+  CreateListScreen(bool newList) {
     this.newList = newList;
-    print("createlist.dart constructor (uuid): "+trip_uuid);
   }
 
   @override
@@ -45,37 +40,24 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   final User curUser = FirebaseAuth.instance.currentUser;
   bool newList;
   //////////////////////
-  ShoppingTrip trip;
   var _tripTitleController;
   var _tripDescriptionController;
-  final String uuid = FirebaseAuth.instance.currentUser.uid;
-  String host = FirebaseAuth.instance.currentUser.displayName;
+  final String hostUUID = FirebaseAuth.instance.currentUser.uid;
+  String hostFirstName = FirebaseAuth.instance.currentUser.displayName;
   Map<String,Item_front_end> frontend_list = {}; // name to frontend item
   bool isAdd = false;
   bool delete_list = false;
   bool invite_guest = false;
-  Future<void> delete(String tripID) async{
-    await FirebaseFirestore.instance
-        .collection('shopping_trips_test')
-        .doc(tripID)
-        .delete()
-        .then((value) => print('deleted'))
-        .catchError((error)=>print("failed"))
-    ;
-    await DatabaseService(uuid: curUser.uid).removeTripFromUser(curUser.uid,tripID);
-  }
   @override
   void initState() {
-
     _tripTitleController = TextEditingController()..text = widget.initTitle;
     _tripDescriptionController = TextEditingController()..text = widget.initDescription;
-    trip = ShoppingTrip.withUUID(widget.trip_uuid, widget.initTitle, widget.initDate, widget.initDescription, uuid, []);
     newList = widget.newList;
     //test code
-    trip.beneficiaries.add("Praf");
-    trip.beneficiaries.add("Dhruv");
+    context.read<ShoppingTrip>().addBeneficiary('praf');
+    context.read<ShoppingTrip>().addBeneficiary('harry');
 
-    //List<String> full_list = trip.beneficiaries;
+    // full_list = trip.beneficiaries;
     //end test code
     super.initState();
   }
@@ -83,7 +65,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
         context: context,
-        initialDate: trip.date,
+        initialDate: context.read<ShoppingTrip>().date,
         firstDate: DateTime(2022),
         lastDate: DateTime(2050),
         builder: (BuildContext context, Widget child) {
@@ -97,21 +79,20 @@ class _CreateListsScreenState extends State<CreateListScreen> {
           );
         }
     );
-    if (picked != null && picked != trip.date)
-      setState(() {
-        trip.date = picked;
-      });
+    if (picked != null && picked != context.read<ShoppingTrip>().date) {
+      context.read<ShoppingTrip>().editTripDate(picked);
+    }
   }
 
-  void updateGridView(ShoppingTrip trip, bool new_trip) async {
+  void updateGridView(bool new_trip) async {
     try {
       // ListData data = new ListData(tripTitle, tripDescription, tripDate, unique_id);
       // print('updateGridView DatabaseServiceapple count: '+trip.items['apple'].quantity.toString());
       if(new_trip) {
-        await DatabaseService(uuid: trip.uuid).createShoppingTrip(trip);
-        await DatabaseService(uuid: curUser.uid).addTripToUser(curUser.uid,trip.uuid);
+        // await DatabaseService(uuid: trip.uuid).createShoppingTrip(trip);
+        // await DatabaseService(uuid: curUser.uid).addTripToUser(curUser.uid,trip.uuid);
       } else {
-        await DatabaseService(uuid: trip.uuid).updateShoppingTrip(trip);
+        // await DatabaseService(uuid: trip.uuid).updateShoppingTrip(trip);
       }
     } catch (e) {
       print('error in updateGridView: '+e.toString());
@@ -120,7 +101,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String host_uuid = host;
+    String hostUUID = context.read<Cowboy>().uuid;
 
     return Scaffold(
       appBar: AppBar(
@@ -162,7 +143,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                               style: TextStyle(color: Colors.black),
                               controller: _tripTitleController,
                               onChanged: (value){
-                                trip.title = value;
+                                context.read<ShoppingTrip>().editTripTitle(value);
                               }
 
                           ),
@@ -192,7 +173,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Text("${trip.date.toLocal()}".split(' ')[0]),
+                      Text("${context.read<ShoppingTrip>().date.toLocal()}".split(' ')[0]),
                       SizedBox(
                         height: 20.0,
                       ),
@@ -232,7 +213,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                               style: TextStyle(color: Colors.black),
                               controller: _tripDescriptionController,
                               onChanged: (value){
-                                trip.description = value;
+                                context.read<ShoppingTrip>().editTripDescription(value);
                               }
                           ),
                         )
@@ -249,18 +230,18 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                   width: 5,
                   child: RoundedButton(
                     onPressed: () {
-                      if(trip.title != '') {
+                      if(context.read<ShoppingTrip>().title != '') {
                         frontend_list.forEach((name, fe_item) {
                           // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
-                          trip.addItemDirect(fe_item.item);
+                          context.read<ShoppingTrip>().addItemDirect(fe_item.item);
                         });
                         // print('item: '+trip.items['apple'].quantity.toString());
-                        updateGridView(trip, newList);
+                        updateGridView(newList);
                         Navigator.pop(context);
                         //Navigator.pushNamed(context, ListsScreen.id);
                         if(newList)
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => EditListScreen(trip)));
-                      }else{
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => EditListScreen(context.read<Cowboy>().uuid)));
+                      } else {
                         // print("triggered");
                         showDialog(
                           context: context,
@@ -293,7 +274,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                     onPressed: () async {
                       await check_delete(context);
                       if(delete_list) {
-                        delete(trip.uuid);
+                        context.read<Cowboy>().removeTrip(context.read<ShoppingTrip>().uuid);
                         Navigator.of(context).popUntil((route){
                           return route.settings.name == ListsScreen.id;
                         });

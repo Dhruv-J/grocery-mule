@@ -18,6 +18,7 @@ dependencies:
   uuid: 3.0.5
   number_inc_dec: ^0.8.0
   badges: ^2.0.2
+  provider: ^5.0.0
 
 dev_dependencies:
   flutter_test:

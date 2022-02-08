@@ -6,12 +6,10 @@ import 'package:grocery_mule/screens/createlist.dart';
 import 'package:grocery_mule/screens/friend_screen.dart';
 import 'package:grocery_mule/screens/welcome_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:grocery_mule/classes/data_structures.dart';
-import 'package:grocery_mule/database/updateListData.dart';
-import 'package:grocery_mule/database/query.dart';
+import 'package:grocery_mule/providers/cowboy_provider.dart';
 import 'package:grocery_mule/screens/user_info.dart';
 import 'package:async/async.dart';
-
+import 'package:provider/provider.dart';
 import 'editlist.dart';
 
 
@@ -30,11 +28,50 @@ class _ListsScreenState extends State<ListsScreen> {
 
   final _auth = FirebaseAuth.instance;
   final User curUser = FirebaseAuth.instance.currentUser;
+  CollectionReference userCollection = FirebaseFirestore.instance.collection('updated_users_test');
 
   @override
   void initState() {
     // TODO: implement initState
+    _loadCurrentCowboy();
     super.initState();
+  }
+
+  void _loadCurrentCowboy() {
+    _queryCowboy().then((DocumentSnapshot snapshot) {
+      if(snapshot != null) {
+        List<String> shoppingTrips = <String>[];
+        Map<String, String> friends = <String, String>{};
+        List<String> requests = <String>[];
+        // extrapolating data into provider
+        ((snapshot.data() as Map<String, dynamic>)['shopping_trips'] as List<dynamic>).forEach((dynamicElement) {
+          shoppingTrips.add(dynamicElement.toString());
+        });
+        (snapshot['friends'] as Map<String, dynamic>).forEach((dynamicKey, dynamicValue) {
+          friends[dynamicKey.toString()] = dynamicValue.toString();
+        });
+        (snapshot['requests'] as List<dynamic>).forEach((dynamicElement) {
+          requests.add(dynamicElement.toString());
+        });
+        setState(() {
+          // reads and calls method
+          context.read<Cowboy>().fillFields(snapshot['uuid'].toString(), snapshot['first_name'].toString(), snapshot['last_name'].toString(), snapshot['email'].toString(), shoppingTrips, friends, requests);
+        });
+      }
+    });
+  }
+
+  Future<DocumentSnapshot> _queryCowboy() async {
+    if(curUser != null) {
+      DocumentSnapshot tempShot;
+      await userCollection.doc(curUser.uid).get().then((docSnapshot) {
+        tempShot=docSnapshot;
+        // print('L TYPE: '+docSnapshot.data().runtimeType.toString());
+      });
+      return tempShot;
+    } else {
+      return null;
+    }
   }
 
   /*
@@ -69,7 +106,6 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 
 
-
   @override
   Widget build(BuildContext context) {
     print('pulling data');
@@ -97,6 +133,7 @@ class _ListsScreenState extends State<ListsScreen> {
                     ),
                   ),
                 ),
+                Text(context.watch<Cowboy>().first_name),
                 ListTile(
                   title: const Text('Cowamigos'),
                   onTap: () {
@@ -181,28 +218,8 @@ class _ListsScreenState extends State<ListsScreen> {
                             ),
                           ),
                           onTap: () async {
-                            ShoppingTrip cur_trip = new ShoppingTrip(streamSnapshot.docs[index]['title'],
-                                (streamSnapshot.docs[index]['date'] as Timestamp).toDate(),
-                                streamSnapshot.docs[index]['description'],
-                                curUser.uid, []);
-                            cur_trip.uuid = streamSnapshot.docs[index]['uuid'];
-                            streamSnapshot.docs[index]['items'].forEach((name, item) {
-                              print(item.runtimeType);
-                              Item temp_item = Item.withSubitems(item['name'], item['quantity'], item['beneficiaries']);
-                              cur_trip.items[temp_item.name] = temp_item;
-                            });
-                            // print("lists.dart method (uuid): "+cur_trip.uuid);
-                            //check if the curData's field is null, if so, set flag
-                            //print("rig rag shig shag: "+cur_trip.uuid);
-                            /*final updated_trip =*/ await Navigator.push(context,MaterialPageRoute(builder: (context) => EditListScreen(cur_trip)));
-                            /*
-                            if (updated_trip != null) {
-                              updateGridView(updated_trip, false);
-                            } else {
-                              print('no changes made to be saved!');
-                            }
-                            */
-
+                            String tripUUID = streamSnapshot.docs[index]['uuid'];
+                            await Navigator.push(context,MaterialPageRoute(builder: (context) => EditListScreen(tripUUID)));
                           },
                         ),
                       );
@@ -221,7 +238,7 @@ class _ListsScreenState extends State<ListsScreen> {
               onPressed: () async {
                 await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CreateListScreen(new ShoppingTrip('', new DateTime.now(), '', curUser.uid, []),true))
+                    MaterialPageRoute(builder: (context) => CreateListScreen(true))
                 );
 
               },

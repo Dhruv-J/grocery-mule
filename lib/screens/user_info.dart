@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:grocery_mule/components/rounded_ button.dart';
-import 'package:grocery_mule/constants.dart';
+import 'package:grocery_mule/providers/cowboy_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:grocery_mule/database/updateListData.dart';
-import 'package:grocery_mule/classes/data_structures.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 
@@ -92,8 +91,7 @@ class _UserInfoScreenScreenState extends State<UserInfoScreen> {
                         onPressed: ()
                         async {
                           try {
-                            Cowboy new_cowboy = Cowboy(curUser.uid, firstName, lastName, email);
-                            await DatabaseService(uuid: curUser.uid).updateUserData(new_cowboy);
+                            context.read<Cowboy>().fillUpdatedInfo(firstName, lastName, email);
                             print('moving to lists screen');
                             Navigator.pop(context);
                           }  catch (e) {

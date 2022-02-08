@@ -1,38 +1,24 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grocery_mule/components/rounded_ button.dart';
-import 'package:grocery_mule/constants.dart';
 import 'dart:async';
-import 'package:grocery_mule/screens/lists.dart';
-import 'package:grocery_mule/classes/ListData.dart';
-import 'package:grocery_mule/classes/data_structures.dart';
-import 'package:intl/intl.dart';
+import 'package:grocery_mule/providers/cowboy_provider.dart';
+import 'package:grocery_mule/providers/shopping_trip_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:number_inc_dec/number_inc_dec.dart';
-
-import '../database/query.dart';
-import '../database/updateListData.dart';
 import 'createlist.dart';
 typedef StringVoidFunc = void Function(String,int);
 
 class EditListScreen extends StatefulWidget {
   static String id = 'edit_list_screen';
-  String trip_uuid;
-  String initTitle;
-  String initDescription;
-  DateTime initDate;
-  String host = null;
-  //createList has the ids
-  //when createList has a list that's already filled
-  //keep a field of the original id, but generate a new id
-  //in the return variable
-  EditListScreen(ShoppingTrip trip) {
-    initTitle = trip.title;
-    initDescription = trip.description;
-    initDate = trip.date;
-    trip_uuid = trip.uuid;
+  String tripUUID;
+  User curUser = FirebaseAuth.instance.currentUser;
+  final String hostUUID = FirebaseAuth.instance.currentUser.uid;
 
-    print("createlist.dart constructor (title): "+initTitle);
+  // simple constructor, just takes in tripUUID
+  EditListScreen(String tripUUID) {
+    this.tripUUID = tripUUID;
   }
 
   @override
@@ -47,83 +33,70 @@ class Item_front_end {
   }
 }
 class _EditListsScreenState extends State<EditListScreen> {
-  ShoppingTrip trip;
   var _tripTitleController;
   var _tripDescriptionController;
-  final String uuid = FirebaseAuth.instance.currentUser.uid;
+  User curUser = FirebaseAuth.instance.currentUser;
+  String tripUUID;
+  CollectionReference shoppingTripCollection = FirebaseFirestore.instance.collection('shopping_trips_test');
 
   Map<String,Item_front_end> frontend_list = {}; // name to frontend item
-  List<String> full_list = [];
+  List<String> full_list; // host and beneficiaries
   bool isAdd = false;
   bool invite_guest = false;
-  DatabaseService service  = new DatabaseService();
-  UserQuery query;
-  String host_name = null;
-  Future<void> delete(String tripID) async{
-    await FirebaseFirestore.instance
-        .collection('shopping_trips_test')
-        .doc(tripID)
-        .delete()
-        .then((value) => print('deleted'))
-        .catchError((error)=>print("failed"))
-    ;
+  String hostFirstName;
 
-  }
-
-  void initTrip() async {
-    // we use the try catch to get an error in case an error happens with firestore
-    try {
-      final tripShot = await FirebaseFirestore.instance.collection('shopping_trips_test').doc(widget.trip_uuid).get();
-      //Map<String,String> temp_sub = Map<String, String>.from(tripShot['beneficiaries']);
-
-      trip = ShoppingTrip.withItems(
-          tripShot['uuid'],
-        tripShot['title'],
-        DateTime.parse(tripShot['date']),
-        tripShot['description'],
-        tripShot['host'],
-        tripShot['beneficiaries'],
-        tripShot['items'],
-      );
-    }catch(e){
-      print(e);
-    }
-    print(trip.items);
-  }
   @override
   void initState() {
+    tripUUID = widget.tripUUID;
+    hostFirstName = context.read<Cowboy>().first_name;
+    _loadCurrentTrip();
     // TODO: implement initState
-    _tripTitleController = TextEditingController()..text = widget.initTitle;
-    _tripDescriptionController = TextEditingController()..text = widget.initDescription;
-    initTrip();
-    trip = ShoppingTrip.withUUID(widget.trip_uuid, widget.initTitle, widget.initDate, widget.initDescription, uuid, []);
+    _tripTitleController = TextEditingController()..text = context.read<ShoppingTrip>().title;
+    _tripDescriptionController = TextEditingController()..text = context.read<ShoppingTrip>().description;
 
-    //test code
-    trip.beneficiaries.add("Praf");
-    trip.beneficiaries.add("Dhruv");
-    trip.beneficiaries.forEach((element) {
-      full_list.add(element);
-    });
+    /* // test code
+    context.read<ShoppingTrip>().addBeneficiary('Praf');
+    context.read<ShoppingTrip>().addBeneficiary('Harry');
+    full_list = context.read<ShoppingTrip>().beneficiaries;
+    full_list.add(context.read<Cowboy>().uuid);
     // TODO swap out with sample item once items update properly
     frontend_list = {'apple': Item_front_end('apple', full_list)};
-    query = new UserQuery(uuid,"");
-    FirebaseFirestore.instance
-        .collection('updated_users_test')
-        .doc(trip.host)
-        .get()
-        .then((DocumentSnapshot snap) {
-      if (snap.exists) {
-        setState(() {
-          host_name = snap['first_name'];
-          full_list.add(host_name);
+    // end test code
+     */
+    super.initState();
+  }
+
+  void _loadCurrentTrip() {
+    _queryCurrentTrip().then((DocumentSnapshot snapshot) {
+      if(snapshot != null) {
+        DateTime date = DateTime.now();
+        List<String> beneficiaries = <String>[];
+        Map<String, Item> items = <String, Item>{};
+        date = (snapshot['date'] as Timestamp).toDate();
+        ((snapshot.data() as Map<String, dynamic>)['beneficiaries'] as List<dynamic>).forEach((dynamicElement) {
+          beneficiaries.add(dynamicElement.toString());
         });
-      } else {
-        print('Document does not exist on the database');
+        ((snapshot.data() as Map<String, dynamic>)['items'] as Map<String, dynamic>).forEach((name, dynamicItem) {
+          items[name] = Item.fromMap(dynamicItem as Map<String, dynamic>);
+        });
+        setState(() {
+          context.read<ShoppingTrip>().initializeTripFromDB(snapshot['uuid'],
+              (snapshot.data() as Map<String, dynamic>)['title'], date,
+              (snapshot.data() as Map<String, dynamic>)['description'],
+              (snapshot.data() as Map<String, dynamic>)['host'], beneficiaries, items);
+        });
       }
     });
+  }
 
-    //end test code
-    super.initState();
+  Future<DocumentSnapshot> _queryCurrentTrip() async {
+    if(tripUUID != '') {
+      DocumentSnapshot tempShot;
+      await shoppingTripCollection.doc(tripUUID).get().then((docSnapshot) => tempShot=docSnapshot);
+      return tempShot;
+    } else {
+      return null;
+    }
   }
 
   void auto_collapse(String ignore){
@@ -135,7 +108,7 @@ class _EditListsScreenState extends State<EditListScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
         context: context,
-        initialDate: trip.date,
+        initialDate: context.read<ShoppingTrip>().date,
         firstDate: DateTime(2021),
         lastDate: DateTime(2050),
         builder: (BuildContext context, Widget child) {
@@ -149,31 +122,25 @@ class _EditListsScreenState extends State<EditListScreen> {
           );
         }
     );
-    if (picked != null && picked != trip.date)
-      setState(() {
-        trip.date = picked;
-      });
+    if (picked != null && picked != context.read<ShoppingTrip>().date) {
+      context.read<ShoppingTrip>().updateTripDate(picked);
+    }
   }
 
   void add_item(String name){
-
     Item_front_end new_item = new Item_front_end(name,full_list);
     if(frontend_list[name] == null) {
-      setState(() {
-        frontend_list[name] = new_item;
-        trip.addItemDirect(new_item.item);
-      });
-    }
-    else
+      frontend_list[name] = new_item;
+      context.read<ShoppingTrip>().addItem(name);
+    } else {
       print("item already exists");
+    }
   }
 
   void delete_item(String name){
     if(frontend_list[name] != null) {
-      setState(() {
-        frontend_list.remove(name);
-        trip.removeItem(name);
-      });
+      frontend_list.remove(name);
+      context.read<ShoppingTrip>().removeItem(name);
     }
   }
 
@@ -430,7 +397,7 @@ class _EditListsScreenState extends State<EditListScreen> {
     switch (item) {
 
       case 1:
-      Navigator.push(context,MaterialPageRoute(builder: (context) => CreateListScreen(trip,false)));
+      Navigator.push(context,MaterialPageRoute(builder: (context) => CreateListScreen(false)));
     }
   }
 
@@ -477,14 +444,17 @@ class _EditListsScreenState extends State<EditListScreen> {
                       ),
                     ],
                   ),
+                  // TODO how to call watch
+                  // Container(child: Text(context.watch<Cowboy>().first_name),),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      (host_name == null)?
+                      (context.watch<Cowboy>().first_name == null)?
                        CircularProgressIndicator():
 
                       Text(
-                        '$host_name',
+                        // may show an old name if name has been updated extremely recently
+                        '$hostFirstName',
                         style: TextStyle(
                           color: Colors.black,
                           fontSize: 20,
@@ -514,7 +484,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                   ),
                   Row(
                     children: [
-                      for(String name in trip.beneficiaries)
+                      for(String name in context.watch<ShoppingTrip>().beneficiaries)
                           Container(
                             child: Text(
                               '$name ',
@@ -601,14 +571,11 @@ class _EditListsScreenState extends State<EditListScreen> {
                 width: 5,
                 child: RoundedButton(
                   onPressed: () {
-
-                      frontend_list.forEach((name, fe_item) {
-                        // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
-                        trip.addItemDirect(fe_item.item);
-                      });
-                      service.updateShoppingTrip(trip);
-                      Navigator.pop(context, trip);
-
+                    frontend_list.forEach((name, fe_item) {
+                      // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
+                      context.read<ShoppingTrip>().addItemDirect(fe_item.item);
+                    });
+                    Navigator.pop(context);
                   },
                   title: "Update List",
                 ),

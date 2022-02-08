@@ -4,7 +4,6 @@ import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
 import 'package:grocery_mule/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:grocery_mule/classes/data_structures.dart';
 
 class FriendScreen extends StatefulWidget {
   static String id = 'friend_screen';
