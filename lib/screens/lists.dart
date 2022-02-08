@@ -86,10 +86,7 @@ class _ListsScreenState extends State<ListsScreen> {
     }
   }
 
-
-
-   final  Stream<QuerySnapshot<Map<String, dynamic>>> _list =  FirebaseFirestore.instance.collection('shopping_trips_test').snapshots();
-
+  final  Stream<QuerySnapshot<Map<String, dynamic>>> _list =  FirebaseFirestore.instance.collection('shopping_trips_test').snapshots();
 
   @override
   Widget build(BuildContext context) {
@@ -207,8 +204,7 @@ class _ListsScreenState extends State<ListsScreen> {
                                   ),
                                 ],
                               ),
-
-                              child: ListTile(
+                                child: ListTile(
                                 title: Text(
                                   '\n${snapshot.data.docs[index]['title']}\n'
                                       '${snapshot.data

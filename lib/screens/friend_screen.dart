@@ -8,6 +8,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 final CollectionReference userCollection = FirebaseFirestore.instance.collection('updated_users_test');
 
+
 class FriendScreen extends StatefulWidget {
   static String id = 'friend_screen';
 

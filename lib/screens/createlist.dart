@@ -308,6 +308,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                         if(newList)
                           Navigator.push(context, MaterialPageRoute(builder: (context) => EditListScreen(context.read<Cowboy>().uuid)));
                          */
+
                       } else {
                         // print("triggered");
                         showDialog(
