@@ -102,8 +102,6 @@ class ShoppingTrip with ChangeNotifier{
   addItemDirect(Item item) {
     _items[item.name] = item;
     // TODO if you only call this method from pulling from database, remove this line
-    updateItemDB();
-    notifyListeners();
   }
   // edits individual item within list, notifies listeners, updates database
   editItem(String name, int quantity, Map<String, int> subitems) {
@@ -142,11 +140,11 @@ class ShoppingTrip with ChangeNotifier{
   // updates after a beneficiary has been added
   updateBeneficiaryDB() {
     tripCollection.doc(_uuid).update({'beneficiaries': _beneficiaries});
-    tripCollection.doc(_uuid).update({'items': _items});
+    tripCollection.doc(_uuid).update({'items': itemsToMap()});
   }
   // updates items only in DB
   updateItemDB() {
-    tripCollection.doc(_uuid).update({'items': _items});
+    tripCollection.doc(_uuid).update({'items': itemsToMap()});
   }
 
   // toMap func for publishing to database
@@ -163,20 +161,24 @@ class Item {
   String name;
   int quantity;
   Map<String, int> subitems = <String, int>{}; // uuid to individual quantity needed
-
+  bool isExpanded;
   Item(this.name, this.quantity, List<String> beneficiaries) {
     subitems = <String, int>{};
     beneficiaries.forEach((beneficiary) {
       subitems[beneficiary] = 0;
     });
+    this.isExpanded = false;
   }
-  Item.withSubitems(this.name, this.quantity, this.subitems);
+  Item.withSubitems(this.name, this.quantity, this.subitems){
+    this.isExpanded = true;
+  }
   Item.fromMap(Map<String, dynamic> itemMap) {
     this.name = itemMap['name'].toString();
     this.quantity = int.parse(itemMap['quantity'].toString());
     (itemMap['subitems'] as Map<String, dynamic>).forEach((name, indivQuantity) {
       this.subitems[name.toString()] = int.parse(indivQuantity.toString());
     });
+    this.isExpanded = false;
   }
 
   addBeneficiary(String beneficiary) {
