@@ -44,6 +44,7 @@ class _EditListsScreenState extends State<EditListScreen> {
     tripUUID = widget.tripUUID;
     hostFirstName = context.read<Cowboy>().firstName;
     _loadCurrentTrip();
+
     // TODO: implement initState
     _tripTitleController = TextEditingController()..text = context.read<ShoppingTrip>().title;
     _tripDescriptionController = TextEditingController()..text = context.read<ShoppingTrip>().description;
@@ -481,7 +482,6 @@ class _EditListsScreenState extends State<EditListScreen> {
                 create_item(),
               //single_item(grocery_list[1]),
               _buildPanel(),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
