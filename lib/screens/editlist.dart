@@ -24,45 +24,30 @@ class EditListScreen extends StatefulWidget {
   @override
   _EditListsScreenState createState() => _EditListsScreenState();
 }
-class Item_front_end {
-  int expand;
-  Item item;
-  Item_front_end(String name, List<String> members){  //pass in list of beneficiaries, food
-    expand = 0;
-    item = Item(name, 0, members);
-  }
-}
+
+
+
 class _EditListsScreenState extends State<EditListScreen> {
   var _tripTitleController;
   var _tripDescriptionController;
   User curUser = FirebaseAuth.instance.currentUser;
   String tripUUID;
   CollectionReference shoppingTripCollection = FirebaseFirestore.instance.collection('shopping_trips_test');
-
-  Map<String,Item_front_end> frontend_list = {}; // name to frontend item
   List<String> full_list; // host and beneficiaries
   bool isAdd = false;
   bool invite_guest = false;
   String hostFirstName;
-
+  ShoppingTrip cur_trip;
   @override
   void initState() {
     tripUUID = widget.tripUUID;
     hostFirstName = context.read<Cowboy>().first_name;
+    cur_trip = context.read<ShoppingTrip>();
     _loadCurrentTrip();
-    // TODO: implement initState
-    _tripTitleController = TextEditingController()..text = context.read<ShoppingTrip>().title;
-    _tripDescriptionController = TextEditingController()..text = context.read<ShoppingTrip>().description;
 
-    /* // test code
-    context.read<ShoppingTrip>().addBeneficiary('Praf');
-    context.read<ShoppingTrip>().addBeneficiary('Harry');
-    full_list = context.read<ShoppingTrip>().beneficiaries;
-    full_list.add(context.read<Cowboy>().uuid);
-    // TODO swap out with sample item once items update properly
-    frontend_list = {'apple': Item_front_end('apple', full_list)};
-    // end test code
-     */
+    // TODO: implement initState
+    _tripTitleController = TextEditingController()..text = cur_trip.title;
+    _tripDescriptionController = TextEditingController()..text = cur_trip.description;
     super.initState();
   }
 
@@ -78,12 +63,18 @@ class _EditListsScreenState extends State<EditListScreen> {
         });
         ((snapshot.data() as Map<String, dynamic>)['items'] as Map<String, dynamic>).forEach((name, dynamicItem) {
           items[name] = Item.fromMap(dynamicItem as Map<String, dynamic>);
+          items[name].isExpanded = false;
+            //add each item to the panel (for expandable items presented to user)
+          //frontend_list[name] = new Item_front_end(name, items[name]);
         });
+
         setState(() {
-          context.read<ShoppingTrip>().initializeTripFromDB(snapshot['uuid'],
+          cur_trip.initializeTripFromDB(snapshot['uuid'],
               (snapshot.data() as Map<String, dynamic>)['title'], date,
               (snapshot.data() as Map<String, dynamic>)['description'],
-              (snapshot.data() as Map<String, dynamic>)['host'], beneficiaries, items);
+              (snapshot.data() as Map<String, dynamic>)['host'],
+              beneficiaries, items);
+
         });
       }
     });
@@ -93,71 +84,38 @@ class _EditListsScreenState extends State<EditListScreen> {
     if(tripUUID != '') {
       DocumentSnapshot tempShot;
       await shoppingTripCollection.doc(tripUUID).get().then((docSnapshot) => tempShot=docSnapshot);
+      print(tempShot.data());
       return tempShot;
     } else {
       return null;
     }
   }
 
-  void auto_collapse(String ignore){
-    frontend_list.forEach((key, item) {
-      if(key != ignore)
-        item.expand =0;
+
+  void auto_collapse(Item ignore){
+    cur_trip.items.values.forEach((item) {
+      setState(() {
+        if(item != ignore)
+          item.isExpanded = false;
+      });
     });
   }
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime picked = await showDatePicker(
-        context: context,
-        initialDate: context.read<ShoppingTrip>().date,
-        firstDate: DateTime(2021),
-        lastDate: DateTime(2050),
-        builder: (BuildContext context, Widget child) {
-          return Theme(
-            data: ThemeData.light().copyWith(
-              colorScheme: ColorScheme.light().copyWith(
-                primary: const Color(0xFFbc5100),
-              ),
-            ),
-            child: child,
-          );
-        }
-    );
-    if (picked != null && picked != context.read<ShoppingTrip>().date) {
-      context.read<ShoppingTrip>().updateTripDate(picked);
-    }
-  }
 
-  void add_item(String name){
-    Item_front_end new_item = new Item_front_end(name,full_list);
-    if(frontend_list[name] == null) {
-      frontend_list[name] = new_item;
-      context.read<ShoppingTrip>().addItem(name);
-    } else {
-      print("item already exists");
-    }
-  }
 
-  void delete_item(String name){
-    if(frontend_list[name] != null) {
-      frontend_list.remove(name);
-      context.read<ShoppingTrip>().removeItem(name);
-    }
-  }
 
-  Widget simple_item(Item_front_end front_item){
-    String name = front_item.item.name;
+  Widget simple_item(Item item){
+    String name = item.name;
     int quantity = 0;
-    front_item.item.subitems.forEach((name, count) {
+    item.subitems.forEach((name, count) {
       quantity = quantity + count;
     });
 
     return Dismissible(
       key: Key(name),
       onDismissed: (direction) {
+        cur_trip.removeItem(name);
         // Remove the item from the data source.
-        setState(() {
-          delete_item(name);
-        });
+
       },
       confirmDismiss: (DismissDirection direction) async {
         return await showDialog(
@@ -209,23 +167,15 @@ class _EditListsScreenState extends State<EditListScreen> {
                     ),
                   ),
                 ),
-                Container(
-                    child: IconButton(
-                        icon: const Icon(Icons.expand_more_sharp),
-                        onPressed:
-                            () =>(
-                            setState(() {
-                              front_item.expand = 1;
-                              auto_collapse(front_item.item.name);
-                            }))
-                    )
-                ),
+
               ],
             )),
       ),
       background: Container(color: Colors.red),
     );
   }
+
+
 
   Widget indie_item(String name, int number,StringVoidFunc callback){
     return Container(
@@ -266,17 +216,12 @@ class _EditListsScreenState extends State<EditListScreen> {
     );
   }
 
-  Widget expanded_item(Item_front_end front_item){
-    String name = front_item.item.name;
-    int quantity = 0;
-    front_item.item.subitems.forEach((key, value) {
-      quantity = quantity + value;
-      front_item.item.quantity = quantity;
-    });
-    void updateUsrQuantity(String name, int number){
+  Widget expanded_item(Item item){
+    void updateUsrQuantity(String person, int number){
       setState(() {
-        front_item.item.subitems[name] = number;
-        // trip.addItemDirect(front_item.item);
+        item.subitems[person] = number;
+        cur_trip.editItem(item.name,item.subitems.values.reduce((sum, element) => sum + element),item.subitems);
+        // TODO update database here for quant
       });
     };
     return Container(
@@ -287,54 +232,40 @@ class _EditListsScreenState extends State<EditListScreen> {
 
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Container(
-                child: Text(
-                  '$name',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
-                  ),
-                ),
-                padding: EdgeInsets.all(20),
-              ),
-              Container(
-                child: Text(
-                  'x$quantity',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
-                  ),
-                ),
-              ),
-              Container(
-                  child: IconButton(
-                      icon: const Icon(Icons.expand_less_sharp),
-                      onPressed:
-                          () =>(
-                          setState(() {front_item.expand = 0;}))
-                  )
-              ),
-            ],
-          ),
-          for(var entry in front_item.item.subitems.entries)
+          for(var entry in item.subitems.entries)
             indie_item(entry.key,entry.value,updateUsrQuantity)
         ],
       ),
     );
   }
-  Widget single_item(Item_front_end test){
-    return (
-        (test.expand == 1)?expanded_item(test)
-            : simple_item(test)
+
+
+  Widget _buildPanel() {
+    return ExpansionPanelList(
+      expansionCallback: (int index, bool isExpanded) {
+        setState(() {
+          cur_trip.items[cur_trip.items.keys.toList()[index]].isExpanded = !isExpanded;
+          auto_collapse(cur_trip.items[cur_trip.items.keys.toList()[index]]);
+        });
+      },
+      children:
+          cur_trip.items.values.toList().map((item) {
+            return ExpansionPanel(
+              headerBuilder: (BuildContext context, bool isExpanded) {
+                return simple_item(item);
+              },
+              body:
+              expanded_item(item),
+              isExpanded: item.isExpanded,
+            );
+          }).toList(),
+
     );
   }
 
   Widget create_item(){
     String food = '';
-    auto_collapse(food);
+    auto_collapse(null);
     return Container(
       decoration: BoxDecoration(
           shape: BoxShape.rectangle,
@@ -375,7 +306,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                           () {
                         if (food != '')
                           setState(() {
-                            add_item(food);
+                            cur_trip.addItem(food);
                             isAdd = false;
                           });
                       }
@@ -395,7 +326,6 @@ class _EditListsScreenState extends State<EditListScreen> {
   }
   void handleClick(int item) {
     switch (item) {
-
       case 1:
       Navigator.push(context,MaterialPageRoute(builder: (context) => CreateListScreen(false)));
     }
@@ -538,9 +468,14 @@ class _EditListsScreenState extends State<EditListScreen> {
               if(isAdd)
                 create_item(),
               //single_item(grocery_list[1]),
-
+              _buildPanel(),
+              //for(var key in cur_trip.items.keys.toList().reversed)
+              //  single_item(cur_trip.items[key]),
+              /*
               for(var key in frontend_list.keys.toList().reversed)
                 single_item(frontend_list[key]),
+
+               */
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -571,10 +506,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                 width: 5,
                 child: RoundedButton(
                   onPressed: () {
-                    frontend_list.forEach((name, fe_item) {
-                      // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
-                      context.read<ShoppingTrip>().addItemDirect(fe_item.item);
-                    });
+
                     Navigator.pop(context);
                   },
                   title: "Update List",

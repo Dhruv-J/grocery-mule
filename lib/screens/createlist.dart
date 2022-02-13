@@ -44,7 +44,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   var _tripDescriptionController;
   final String hostUUID = FirebaseAuth.instance.currentUser.uid;
   String hostFirstName = FirebaseAuth.instance.currentUser.displayName;
-  Map<String,Item_front_end> frontend_list = {}; // name to frontend item
+  //Map<String,Item_front_end> frontend_list = {}; // name to frontend item
   bool isAdd = false;
   bool delete_list = false;
   bool invite_guest = false;
@@ -231,10 +231,10 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                   child: RoundedButton(
                     onPressed: () {
                       if(context.read<ShoppingTrip>().title != '') {
-                        frontend_list.forEach((name, fe_item) {
+                        //frontend_list.forEach((name, fe_item) {
                           // trip.items[fe_item.item.name] = Item.withSubitems(fe_item.item.name, fe_item.item.quantity, fe_item.item.subitems);
-                          context.read<ShoppingTrip>().addItemDirect(fe_item.item);
-                        });
+                          //context.read<ShoppingTrip>().addItemDirect(fe_item.item);
+                        //});
                         // print('item: '+trip.items['apple'].quantity.toString());
                         updateGridView(newList);
                         Navigator.pop(context);

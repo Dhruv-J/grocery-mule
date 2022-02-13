@@ -95,6 +95,7 @@ class _ListsScreenState extends State<ListsScreen> {
   }
   */
   Stream<List<QuerySnapshot>> getData() {
+
     Stream host_lists = FirebaseFirestore.instance.collection('shopping_trips_test').where('host', isEqualTo: curUser.uid).snapshots();
     Stream bene_lists = FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: curUser.uid).snapshots();
     /*UserQuery testie = new UserQuery('AU8H9TXaKHckfCKIjyDBWFqQRGf2', 'sharmaprafull76@gmail.com');
@@ -102,6 +103,7 @@ class _ListsScreenState extends State<ListsScreen> {
     testie.getUUIDByEmail().then((value)=> uuid=value);
     print(uuid);
     testie.getUserByUUID().then((value) => print(value.first_name));*/
+
     return StreamZip([host_lists, bene_lists]);
   }
 
