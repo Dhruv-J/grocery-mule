@@ -68,7 +68,7 @@ class _GroceryMuleState extends State<GroceryMule>{
         LoginScreen.id: (context) => LoginScreen(),
         RegistrationScreen.id: (context) => RegistrationScreen(),
         ListsScreen.id: (context) => ListsScreen(),
-        CreateListScreen.id: (context) => CreateListScreen(null),
+        CreateListScreen.id: (context) => CreateListScreen(true),
         EditListScreen.id: (context) => EditListScreen(null),
         UserInfoScreen.id: (context) => UserInfoScreen(),
         ConfirmEmailScreen.id: (context) => ConfirmEmailScreen(),

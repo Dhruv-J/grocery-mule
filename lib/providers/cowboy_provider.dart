@@ -103,13 +103,15 @@ class Cowboy with ChangeNotifier {
 
   // initialize cowboy in database for first time
   intializeCowboyDB() {
-    userCollection.doc(_uuid).set({'uuid': _uuid});
-    userCollection.doc(_uuid).set({'first_name': _firstName});
-    userCollection.doc(_uuid).set({'last_name': _lastName});
-    userCollection.doc(_uuid).set({'email': _email});
-    userCollection.doc(_uuid).set({'trips': _shoppingTrips});
-    userCollection.doc(_uuid).set({'friends': _friends});
-    userCollection.doc(_uuid).set({'requests': _requests});
+    userCollection.doc(_uuid).set({
+      'uuid': _uuid,
+      'first_name': _firstName,
+      'last_name': _lastName,
+      'email': _email,
+      'trips': _shoppingTrips,
+      'friends': _friends,
+      'requests': _requests,
+    });
   }
   // UPDATE FUNCTIONS
   // only update one field each, straight to firestore, completes in background
@@ -124,7 +126,8 @@ class Cowboy with ChangeNotifier {
     userCollection.doc(_uuid).update({'email': _email});
   }
   updateCowboyTrips() {
-    userCollection.doc(_uuid).update({'trips': _shoppingTrips});
+    userCollection.doc(_uuid).update({'shopping_trips': _shoppingTrips});
+    //delete trip from the shopping trip collection
   }
   updateCowboyFriends() {
     userCollection.doc(_uuid).update({'friends': _friends});
@@ -132,12 +135,5 @@ class Cowboy with ChangeNotifier {
   updateCowboyRequests() {
     userCollection.doc(_uuid).update({'requests': _requests});
   }
-  /*updateCowboyAll() {
-    userCollection.doc(_uuid).set({'first_name': _firstName});
-    userCollection.doc(_uuid).set({'last_name': _lastName});
-    userCollection.doc(_uuid).set({'email': _email});
-    userCollection.doc(_uuid).set({'trips': _shoppingTrips});
-    userCollection.doc(_uuid).set({'friends': _friends});
-    userCollection.doc(_uuid).set({'requests': _requests});
-  }*/
+
 }

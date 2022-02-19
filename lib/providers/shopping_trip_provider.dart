@@ -23,6 +23,7 @@ class ShoppingTrip with ChangeNotifier{
     _date = date;
     _description = description;
     _host = host;
+    print(_date);
     initializeTripDB();
     notifyListeners();
   }
@@ -118,18 +119,25 @@ class ShoppingTrip with ChangeNotifier{
 
   // for initializing the trip within the database
   initializeTripDB() {
-    tripCollection.doc(_uuid).set({'uuid': _uuid});
-    tripCollection.doc(_uuid).set({'title': _title});
-    tripCollection.doc(_uuid).set({'date': _date});
-    tripCollection.doc(_uuid).set({'description': _description});
-    tripCollection.doc(_uuid).set({'host': _host});
-    tripCollection.doc(_uuid).set({'beneficiaries': _beneficiaries});
-    tripCollection.doc(_uuid).set({'items': itemsToMap()});
+    tripCollection.doc(_uuid).set(
+        {'uuid': _uuid,
+          'title': _title,
+          'date': _date,
+          'description': _description,
+          'host': _host,
+          'beneficiaries': _beneficiaries,
+          'items': itemsToMap(),
+        });
   }
   // only update trip date in db
   // TODO may need to make two more similar methods for date and description
   updateTripDateDB() {
     tripCollection.doc(_uuid).update({'date': _date});
+  }
+
+  deleteTripDB(){
+    tripCollection.doc(_uuid).delete();
+    notifyListeners();
   }
   // only updates trip metadata in db
   updateTripMetadataDB() {
@@ -167,6 +175,7 @@ class Item {
     beneficiaries.forEach((beneficiary) {
       subitems[beneficiary] = 0;
     });
+
     this.isExpanded = false;
   }
   Item.withSubitems(this.name, this.quantity, this.subitems){

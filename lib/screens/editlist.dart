@@ -44,7 +44,6 @@ class _EditListsScreenState extends State<EditListScreen> {
     hostFirstName = context.read<Cowboy>().first_name;
     cur_trip = context.read<ShoppingTrip>();
     _loadCurrentTrip();
-
     // TODO: implement initState
     _tripTitleController = TextEditingController()..text = cur_trip.title;
     _tripDescriptionController = TextEditingController()..text = cur_trip.description;
@@ -57,7 +56,8 @@ class _EditListsScreenState extends State<EditListScreen> {
         DateTime date = DateTime.now();
         List<String> beneficiaries = <String>[];
         Map<String, Item> items = <String, Item>{};
-        date = (snapshot['date'] as Timestamp).toDate();
+        date = (snapshot.data() as Map<String, dynamic>)['date'];
+        //print(raw_date);
         ((snapshot.data() as Map<String, dynamic>)['beneficiaries'] as List<dynamic>).forEach((dynamicElement) {
           beneficiaries.add(dynamicElement.toString());
         });
@@ -113,7 +113,7 @@ class _EditListsScreenState extends State<EditListScreen> {
     return Dismissible(
       key: Key(name),
       onDismissed: (direction) {
-        cur_trip.removeItem(name);
+        context.read<ShoppingTrip>().removeItem(name);
         // Remove the item from the data source.
 
       },
@@ -220,7 +220,7 @@ class _EditListsScreenState extends State<EditListScreen> {
     void updateUsrQuantity(String person, int number){
       setState(() {
         item.subitems[person] = number;
-        cur_trip.editItem(item.name,item.subitems.values.reduce((sum, element) => sum + element),item.subitems);
+        context.read<ShoppingTrip>().editItem(item.name,item.subitems.values.reduce((sum, element) => sum + element),item.subitems);
         // TODO update database here for quant
       });
     };
@@ -244,12 +244,12 @@ class _EditListsScreenState extends State<EditListScreen> {
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
-          cur_trip.items[cur_trip.items.keys.toList()[index]].isExpanded = !isExpanded;
+          context.read<ShoppingTrip>().items[cur_trip.items.keys.toList()[index]].isExpanded = !isExpanded;
           auto_collapse(cur_trip.items[cur_trip.items.keys.toList()[index]]);
         });
       },
       children:
-          cur_trip.items.values.toList().map((item) {
+      context.watch<ShoppingTrip>().items.values.toList().map((item) {
             return ExpansionPanel(
               headerBuilder: (BuildContext context, bool isExpanded) {
                 return simple_item(item);
@@ -306,7 +306,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                           () {
                         if (food != '')
                           setState(() {
-                            cur_trip.addItem(food);
+                            context.read<ShoppingTrip>().addItem(food);
                             isAdd = false;
                           });
                       }
@@ -327,7 +327,7 @@ class _EditListsScreenState extends State<EditListScreen> {
   void handleClick(int item) {
     switch (item) {
       case 1:
-      Navigator.push(context,MaterialPageRoute(builder: (context) => CreateListScreen(false)));
+      Navigator.push(context,MaterialPageRoute(builder: (context) => CreateListScreen(false,context.read<ShoppingTrip>().uuid)));
     }
   }
 
