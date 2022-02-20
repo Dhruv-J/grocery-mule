@@ -150,5 +150,4 @@ class Cowboy with ChangeNotifier {
   updateCowboyRequestsRemove(String friendUUID) {
     userCollection.doc(friendUUID).update({'requests': FieldValue.arrayRemove([_uuid])});
   }
-
 }
