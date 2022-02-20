@@ -19,6 +19,7 @@ dependencies:
   number_inc_dec: ^0.8.0
   badges: ^2.0.2
   provider: ^5.0.0
+  fluttertoast: ^8.0.8
 
 dev_dependencies:
   flutter_test:

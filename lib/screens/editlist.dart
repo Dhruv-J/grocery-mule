@@ -41,8 +41,7 @@ class _EditListsScreenState extends State<EditListScreen> {
   @override
   void initState() {
     tripUUID = widget.tripUUID;
-    hostFirstName = context.read<Cowboy>().first_name;
-    cur_trip = context.read<ShoppingTrip>();
+    hostFirstName = context.read<Cowboy>().firstName;
     _loadCurrentTrip();
     // TODO: implement initState
     _tripTitleController = TextEditingController()..text = cur_trip.title;
@@ -379,7 +378,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      (context.watch<Cowboy>().first_name == null)?
+                      (context.watch<Cowboy>().firstName == null)?
                        CircularProgressIndicator():
 
                       Text(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 final CollectionReference userCollection = FirebaseFirestore.instance.collection('updated_users_test');
@@ -45,13 +45,21 @@ class Cowboy with ChangeNotifier {
     intializeCowboyDB();
     notifyListeners();
   }
+  // only to instantiate during email search
+  initializeCowboyFriend(String uuid, String firstName, String lastName, String email) {
+    this._uuid = uuid;
+    this._firstName = firstName;
+    this._lastName = lastName;
+    this._email = email;
+    notifyListeners();
+  }
 
   // getters since '_' identifier makes fields private
   String get uuid => _uuid;
-  String get first_name => _firstName;
-  String get last_name => _lastName;
+  String get firstName => _firstName;
+  String get lastName => _lastName;
   String get email => _email;
-  List<String> get shopping_trips => _shoppingTrips;
+  List<String> get shoppingTrips => _shoppingTrips;
   Map<String, String> get friends => _friends;
   List<String> get requests => _requests;
 
@@ -72,7 +80,7 @@ class Cowboy with ChangeNotifier {
   addFriend(String friend_uuid, String friend_name) {
     _requests.remove(friend_uuid);
     _friends[friend_uuid] = friend_name;
-    updateCowboyRequests();
+    updateCowboyRequestsRemove(friend_uuid);
     updateCowboyFriends();
     notifyListeners();
   }
@@ -89,15 +97,15 @@ class Cowboy with ChangeNotifier {
     notifyListeners();
   }
   // adds friend request, notifies listeners, and updates database
-  addFriendRequest(String friend_uuid) {
-    _requests.add(friend_uuid);
-    updateCowboyRequests();
-    notifyListeners();
+  sendFriendRequest(String friendUUID) {
+    // _requests.add(friendUUID);
+    updateCowboyRequestsAdd(friendUUID);
+    // notifyListeners();
   }
   // removes friend request, notifies listeners, and updates database
-  removeFriendRequest(String friend_uuid) {
-    _requests.remove(friend_uuid);
-    updateCowboyRequests();
+  removeFriendRequest(String friendUUID) {
+    _requests.remove(friendUUID);
+    updateCowboyRequestsRemove(friendUUID);
     notifyListeners();
   }
 
@@ -132,8 +140,11 @@ class Cowboy with ChangeNotifier {
   updateCowboyFriends() {
     userCollection.doc(_uuid).update({'friends': _friends});
   }
-  updateCowboyRequests() {
-    userCollection.doc(_uuid).update({'requests': _requests});
+  updateCowboyRequestsAdd(String friendUUID) {
+    userCollection.doc(friendUUID).update({'requests': FieldValue.arrayUnion([_uuid])});
+  }
+  updateCowboyRequestsRemove(String friendUUID) {
+    userCollection.doc(friendUUID).update({'requests': FieldValue.arrayRemove([_uuid])});
   }
 
 }
