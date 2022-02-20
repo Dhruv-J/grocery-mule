@@ -135,7 +135,7 @@ class _ListsScreenState extends State<ListsScreen> {
                     ),
                   ),
                 ),
-                Text(context.watch<Cowboy>().first_name),
+                // Text(context.watch<Cowboy>().first_name),
                 ListTile(
                   title: const Text('Cowamigos'),
                   onTap: () {
