@@ -65,7 +65,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
       _tripDescriptionController = TextEditingController()..text = cur_trip.description;
       newList = false;
     }else{
-      clear_provider();
+      //clear_provider();
     }
     // full_list = trip.beneficiaries;
     //end test code
@@ -76,8 +76,8 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     context.read<ShoppingTrip>().editTripDate(DateTime.now());
     context.read<ShoppingTrip>().editTripDescription("");
     context.read<ShoppingTrip>().editTripTitle("");
-    context.read<ShoppingTrip>().beneficiaries.clear();
-    context.read<ShoppingTrip>().items.clear();
+    context.read<ShoppingTrip>().clearCachedBene();
+    context.read<ShoppingTrip>().clearCachedItem();
   }
 
   void _loadCurrentTrip() {

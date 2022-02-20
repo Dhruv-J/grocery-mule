@@ -59,6 +59,14 @@ class ShoppingTrip with ChangeNotifier{
     _description = description;
     notifyListeners();
   }
+  clearCachedBene() {
+    _beneficiaries.clear();
+    notifyListeners();
+  }
+  clearCachedItem() {
+    items.clear();
+    notifyListeners();
+  }
   // when date field is edited, this method should be called
   updateTripDate(DateTime date) {
     _date = date;

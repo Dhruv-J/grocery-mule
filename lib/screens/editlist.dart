@@ -37,15 +37,14 @@ class _EditListsScreenState extends State<EditListScreen> {
   bool isAdd = false;
   bool invite_guest = false;
   String hostFirstName;
-  ShoppingTrip cur_trip;
   @override
   void initState() {
     tripUUID = widget.tripUUID;
     hostFirstName = context.read<Cowboy>().firstName;
     _loadCurrentTrip();
     // TODO: implement initState
-    _tripTitleController = TextEditingController()..text = cur_trip.title;
-    _tripDescriptionController = TextEditingController()..text = cur_trip.description;
+    _tripTitleController = TextEditingController()..text = context.read<ShoppingTrip>().title;
+    _tripDescriptionController = TextEditingController()..text = context.read<ShoppingTrip>().description;
     super.initState();
   }
 
@@ -55,7 +54,7 @@ class _EditListsScreenState extends State<EditListScreen> {
         DateTime date = DateTime.now();
         List<String> beneficiaries = <String>[];
         Map<String, Item> items = <String, Item>{};
-        date = (snapshot.data() as Map<String, dynamic>)['date'];
+        date = (snapshot['date'] as Timestamp).toDate();
         //print(raw_date);
         ((snapshot.data() as Map<String, dynamic>)['beneficiaries'] as List<dynamic>).forEach((dynamicElement) {
           beneficiaries.add(dynamicElement.toString());
@@ -68,7 +67,7 @@ class _EditListsScreenState extends State<EditListScreen> {
         });
 
         setState(() {
-          cur_trip.initializeTripFromDB(snapshot['uuid'],
+          context.read<ShoppingTrip>().initializeTripFromDB(snapshot['uuid'],
               (snapshot.data() as Map<String, dynamic>)['title'], date,
               (snapshot.data() as Map<String, dynamic>)['description'],
               (snapshot.data() as Map<String, dynamic>)['host'],
@@ -92,7 +91,7 @@ class _EditListsScreenState extends State<EditListScreen> {
 
 
   void auto_collapse(Item ignore){
-    cur_trip.items.values.forEach((item) {
+    context.read<ShoppingTrip>().items.values.forEach((item) {
       setState(() {
         if(item != ignore)
           item.isExpanded = false;
@@ -243,8 +242,8 @@ class _EditListsScreenState extends State<EditListScreen> {
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
-          context.read<ShoppingTrip>().items[cur_trip.items.keys.toList()[index]].isExpanded = !isExpanded;
-          auto_collapse(cur_trip.items[cur_trip.items.keys.toList()[index]]);
+          context.read<ShoppingTrip>().items[context.read<ShoppingTrip>().items.keys.toList()[index]].isExpanded = !isExpanded;
+          auto_collapse(context.read<ShoppingTrip>().items[context.read<ShoppingTrip>().items.keys.toList()[index]]);
         });
       },
       children:
