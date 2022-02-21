@@ -65,7 +65,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
       _tripDescriptionController = TextEditingController()..text = cur_trip.description;
       newList = false;
     }else{
-      //clear_provider();
+      clear_provider();
     }
     // full_list = trip.beneficiaries;
     //end test code

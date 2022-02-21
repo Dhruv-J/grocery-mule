@@ -48,6 +48,21 @@ class _EditListsScreenState extends State<EditListScreen> {
     super.initState();
   }
 
+  int _selectedIndex = 0;
+  static const TextStyle optionStyle =
+  TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
+  List<Widget> _widgetOptions = <Widget>[
+    //Masterlist(context),
+    Text(
+      'Index 1: Business',
+      style: optionStyle,
+    ),
+    Text(
+      'Index 2: School',
+      style: optionStyle,
+    ),
+  ];
+
   void _loadCurrentTrip() {
     _queryCurrentTrip().then((DocumentSnapshot snapshot) {
       if(snapshot != null) {
@@ -333,19 +348,23 @@ class _EditListsScreenState extends State<EditListScreen> {
   Widget build(BuildContext context) {
 
     //full_list.add(host_uuid);
+    return Masterlist(context);
+  }
+
+  Widget Masterlist(BuildContext context){
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Edit grocery items'),
         backgroundColor: const Color(0xFFbc5100),
-          actions: <Widget>[
-            PopupMenuButton<int>(
-          onSelected: (item) => handleClick(item),
-          itemBuilder: (context) => [
-            PopupMenuItem<int>(value: 1, child: Text('Trip Settings')),
-          ],
-        ),
-          ],
+        actions: <Widget>[
+          PopupMenuButton<int>(
+            onSelected: (item) => handleClick(item),
+            itemBuilder: (context) => [
+              PopupMenuItem<int>(value: 1, child: Text('Trip Settings')),
+            ],
+          ),
+        ],
       ),
 
       body: SafeArea(
@@ -378,7 +397,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       (context.watch<Cowboy>().firstName == null)?
-                       CircularProgressIndicator():
+                      CircularProgressIndicator():
 
                       Text(
                         // may show an old name if name has been updated extremely recently
@@ -413,15 +432,15 @@ class _EditListsScreenState extends State<EditListScreen> {
                   Row(
                     children: [
                       for(String name in context.watch<ShoppingTrip>().beneficiaries)
-                          Container(
-                            child: Text(
-                              '$name ',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 20,
-                              ),
+                        Container(
+                          child: Text(
+                            '$name ',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 20,
                             ),
                           ),
+                        ),
 
                       //TODO: Add users to list of beneficiaries when + button is pressed
                       Container(
@@ -499,25 +518,11 @@ class _EditListsScreenState extends State<EditListScreen> {
                   )
                 ],
               ),
-              Container(
-                height: 70,
-                width: 5,
-                child: RoundedButton(
-                  onPressed: () {
 
-                    Navigator.pop(context);
-                  },
-                  title: "Update List",
-                ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
             ],
           ),
         ),
       ),
     );
   }
-
 }

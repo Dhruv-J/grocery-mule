@@ -169,7 +169,9 @@ class _ListsScreenState extends State<ListsScreen> {
             ),
           ),
 
-          body: StreamBuilder(
+          body:
+          /*
+          StreamBuilder(
               stream: getData(),
               //FirebaseFirestore.instance.collection('shopping_trips_test').where('uuid', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
               // FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: FirebaseAuth.instance.currentUser.uid).snapshots()
@@ -231,6 +233,8 @@ class _ListsScreenState extends State<ListsScreen> {
                 );
               }
           ),
+
+           */
 
           floatingActionButton: Container(
             height: 80,
