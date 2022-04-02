@@ -49,6 +49,8 @@ class _ListsScreenState extends State<ListsScreen> {
               dynamic>).forEach((dynamicElement) {
             shoppingTrips.add(dynamicElement.toString());
           });
+        }else{
+          shoppingTrips.add('dummy');
         }
         if(!(snapshot['friends'] as Map<String, dynamic>).isEmpty) {
           (snapshot['friends'] as Map<String, dynamic>).forEach((dynamicKey,
@@ -61,10 +63,10 @@ class _ListsScreenState extends State<ListsScreen> {
             requests.add(dynamicElement.toString());
           });
         }
-        setState(() {
+
           // reads and calls method
           context.read<Cowboy>().fillFields(snapshot['uuid'].toString(), snapshot['first_name'].toString(), snapshot['last_name'].toString(), snapshot['email'].toString(), shoppingTrips, friends, requests);
-        });
+        print(context.read<Cowboy>().shoppingTrips);
       }
     });
   }
@@ -92,7 +94,7 @@ class _ListsScreenState extends State<ListsScreen> {
 
   @override
   Widget build(BuildContext context) {
-
+    print(context.watch<Cowboy>().shoppingTrips);
     return WillPopScope(
         onWillPop: () async => false,
         child: Scaffold(
@@ -152,8 +154,9 @@ class _ListsScreenState extends State<ListsScreen> {
           ),
 
           body:
+
           StreamBuilder <QuerySnapshot<Map<String, dynamic>>>(
-              stream: _list,
+              stream: FirebaseFirestore.instance.collection('shopping_trips_test').where('uuid', whereIn: context.watch<Cowboy>().shoppingTrips).snapshots(),
               //FirebaseFirestore.instance.collection('shopping_trips_test').where('uuid', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
               // FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: FirebaseAuth.instance.currentUser.uid).snapshots()
               builder: (context, AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot) {
@@ -191,20 +194,20 @@ class _ListsScreenState extends State<ListsScreen> {
 
                         child: ListTile(
                           title: Text(
-                            '\n${listSnapshot.data.docs[index]['title']}\n'
-                                '${listSnapshot.data.docs[index]['description']}\n\n'
-                                '${(listSnapshot.data.docs[index]['date'] as Timestamp).toDate().month}'+
+                            '\n${snapshot.data.docs[index]['title']}\n'
+                                '${snapshot.data.docs[index]['description']}\n\n'
+                                '${(snapshot.data.docs[index]['date'] as Timestamp).toDate().month}'+
                                 '/'+
-                                '${(listSnapshot.data.docs[index]['date'] as Timestamp).toDate().day}'+
+                                '${(snapshot.data.docs[index]['date'] as Timestamp).toDate().day}'+
                                 '/'+
-                                '${(listSnapshot.data.docs[index]['date'] as Timestamp).toDate().year}',
+                                '${(snapshot.data.docs[index]['date'] as Timestamp).toDate().year}',
                             style: TextStyle(
                               color: Colors.black,
                               fontSize: 15,
                             ),
                           ),
                           onTap: () async {
-                            String tripUUID = listSnapshot.data.docs[index]['uuid'];
+                            String tripUUID = snapshot.data.docs[index]['uuid'];
                             await Navigator.push(context,MaterialPageRoute(builder: (context) => EditListScreen(tripUUID)));
                           },
                         ),
