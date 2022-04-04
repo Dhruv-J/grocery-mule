@@ -29,16 +29,17 @@ class _ListsScreenState extends State<ListsScreen> {
   final _auth = FirebaseAuth.instance;
   final User curUser = FirebaseAuth.instance.currentUser;
   CollectionReference userCollection = FirebaseFirestore.instance.collection('updated_users_test');
+  Future<void> Cowsnapshot;
 
   @override
   void initState() {
     // TODO: implement initState
-    _loadCurrentCowboy();
+    Cowsnapshot = _loadCurrentCowboy();
     super.initState();
   }
 
-  void _loadCurrentCowboy() {
-    _queryCowboy().then((DocumentSnapshot snapshot) {
+  Future<void> _loadCurrentCowboy() async {
+    final DocumentSnapshot snapshot = await _queryCowboy();
       if(snapshot != null) {
         List<String> shoppingTrips = <String>[];
         Map<String, String> friends = <String, String>{};
@@ -68,7 +69,6 @@ class _ListsScreenState extends State<ListsScreen> {
           context.read<Cowboy>().fillFields(snapshot['uuid'].toString(), snapshot['first_name'].toString(), snapshot['last_name'].toString(), snapshot['email'].toString(), shoppingTrips, friends, requests);
         print(context.read<Cowboy>().shoppingTrips);
       }
-    });
   }
 
   Future<DocumentSnapshot> _queryCowboy() async {
@@ -155,68 +155,98 @@ class _ListsScreenState extends State<ListsScreen> {
 
           body:
 
-          StreamBuilder <QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance.collection('shopping_trips_test').where('uuid', whereIn: context.watch<Cowboy>().shoppingTrips).snapshots(),
-              //FirebaseFirestore.instance.collection('shopping_trips_test').where('uuid', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
-              // FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: FirebaseAuth.instance.currentUser.uid).snapshots()
-              builder: (context, AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot) {
-                if (snapshot.hasError) {
-                  return Text('Something went wrong');
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                }
+          FutureBuilder(
+            future: Cowsnapshot,
+            builder: (context, AsyncSnapshot<void> futSnap) {
+              if (futSnap.hasError) {
+                return Text('Something went wrong');
+              }
+              if (futSnap.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator();
+              }
+              return StreamBuilder <QuerySnapshot<Map<String, dynamic>>>(
+                  stream: FirebaseFirestore.instance.collection(
+                      'shopping_trips_test').where('uuid', whereIn: context
+                      .watch<Cowboy>()
+                      .shoppingTrips).snapshots(),
+                  //FirebaseFirestore.instance.collection('shopping_trips_test').where('uuid', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                  // FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: FirebaseAuth.instance.currentUser.uid).snapshots()
+                  builder: (context, AsyncSnapshot<
+                      QuerySnapshot<Map<String, dynamic>>> snapshot) {
+                    if (snapshot.hasError) {
+                      return Text('Something went wrong');
+                    }
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
 
-                return SafeArea(
-                  child: Scrollbar(
-                  isAlwaysShown: true,
-                  child: GridView.builder(
-                    padding: EdgeInsets.all(8),
-                    itemCount: snapshot.data.docs.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3, mainAxisSpacing: 10, crossAxisSpacing: 7),
-                    itemBuilder: (context, int index) {
-                      return Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFf57f17),
-                          borderRadius: BorderRadius.circular(15),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFffab91),
-                              blurRadius: 3,
-                              offset: Offset(3, 6), // Shadow position
-                            ),
-                          ],
-                        ),
+                    return SafeArea(
+                      child: Scrollbar(
+                        isAlwaysShown: true,
+                        child: GridView.builder(
+                          padding: EdgeInsets.all(8),
+                          itemCount: snapshot.data.docs.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 7),
+                          itemBuilder: (context, int index) {
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFf57f17),
+                                borderRadius: BorderRadius.circular(15),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFffab91),
+                                    blurRadius: 3,
+                                    offset: Offset(3, 6), // Shadow position
+                                  ),
+                                ],
+                              ),
 
 
-                        child: ListTile(
-                          title: Text(
-                            '\n${snapshot.data.docs[index]['title']}\n'
-                                '${snapshot.data.docs[index]['description']}\n\n'
-                                '${(snapshot.data.docs[index]['date'] as Timestamp).toDate().month}'+
-                                '/'+
-                                '${(snapshot.data.docs[index]['date'] as Timestamp).toDate().day}'+
-                                '/'+
-                                '${(snapshot.data.docs[index]['date'] as Timestamp).toDate().year}',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 15,
-                            ),
-                          ),
-                          onTap: () async {
-                            String tripUUID = snapshot.data.docs[index]['uuid'];
-                            await Navigator.push(context,MaterialPageRoute(builder: (context) => EditListScreen(tripUUID)));
+                              child: ListTile(
+                                title: Text(
+                                  '\n${snapshot.data.docs[index]['title']}\n'
+                                      '${snapshot.data
+                                      .docs[index]['description']}\n\n'
+                                      '${(snapshot.data
+                                      .docs[index]['date'] as Timestamp)
+                                      .toDate()
+                                      .month}' +
+                                      '/' +
+                                      '${(snapshot.data
+                                          .docs[index]['date'] as Timestamp)
+                                          .toDate()
+                                          .day}' +
+                                      '/' +
+                                      '${(snapshot.data
+                                          .docs[index]['date'] as Timestamp)
+                                          .toDate()
+                                          .year}',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                onTap: () async {
+                                  String tripUUID = snapshot.data
+                                      .docs[index]['uuid'];
+                                  await Navigator.push(context,
+                                      MaterialPageRoute(builder: (context) =>
+                                          EditListScreen(tripUUID)));
+                                },
+                              ),
+                            );
                           },
                         ),
-                      );
-                    },
-                  ),
-                  ),
-                );
-              }
+                      ),
+                    );
+                  }
+              );
+            },
           ),
 
           floatingActionButton: Container(

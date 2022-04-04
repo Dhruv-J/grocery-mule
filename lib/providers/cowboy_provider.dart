@@ -34,7 +34,7 @@ class Cowboy with ChangeNotifier {
     this._friends = friends;
     this._requests = requests;
     // updateCowboyAll();
-    notifyListeners();
+    //notifyListeners();
   }
   // to initialize account creation
   initializeCowboy(String uuid, String firstName, String lastName, String email) {
