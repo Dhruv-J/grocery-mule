@@ -167,12 +167,10 @@ class _ListsScreenState extends State<ListsScreen> {
               return StreamBuilder <QuerySnapshot<Map<String, dynamic>>>(
                   stream: FirebaseFirestore.instance.collection(
                       'shopping_trips_test').where('uuid', whereIn: context
-                      .watch<Cowboy>()
-                      .shoppingTrips).snapshots(),
-                  //FirebaseFirestore.instance.collection('shopping_trips_test').where('uuid', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
-                  // FirebaseFirestore.instance.collection('shopping_trips_test').where('beneficiaries', arrayContains: FirebaseAuth.instance.currentUser.uid).snapshots()
-                  builder: (context, AsyncSnapshot<
-                      QuerySnapshot<Map<String, dynamic>>> snapshot) {
+                      .watch<Cowboy>().shoppingTrips)
+                      .orderBy('date',descending: true)
+                      .snapshots(),
+                  builder: (context, AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot) {
                     if (snapshot.hasError) {
                       return Text('Something went wrong');
                     }
