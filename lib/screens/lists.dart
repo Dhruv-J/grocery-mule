@@ -139,6 +139,9 @@ class _ListsScreenState extends State<ListsScreen> {
                   onTap: () async {
                     var currentUser = FirebaseAuth.instance.currentUser;
                     if (currentUser != null) {
+                      //here
+                      context.read<Cowboy>().clearUserField();
+                      //clearUserField();
                       await _auth.signOut();
                       print('User signed out');
                     }
