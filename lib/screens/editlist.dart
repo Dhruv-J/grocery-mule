@@ -38,6 +38,7 @@ class _EditListsScreenState extends State<EditListScreen> {
   bool invite_guest = false;
   String hostFirstName;
   Map<String,String> uid_name = {};
+  static bool reload = true;
   @override
   void initState() {
     tripUUID = widget.tripUUID;
@@ -47,6 +48,10 @@ class _EditListsScreenState extends State<EditListScreen> {
     _tripTitleController = TextEditingController()..text = context.read<ShoppingTrip>().title;
     _tripDescriptionController = TextEditingController()..text = context.read<ShoppingTrip>().description;
     super.initState();
+    if(reload){
+      reload = false;
+      (context as Element).reassemble();
+    }
   }
 
   int _selectedIndex = 0;

@@ -307,9 +307,10 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                         await updateGridView(newList);
                         Navigator.pop(context);
                         //Navigator.pushNamed(context, ListsScreen.id);
+                        /*
                         if(newList)
                           Navigator.push(context, MaterialPageRoute(builder: (context) => EditListScreen(context.read<Cowboy>().uuid)));
-
+                         */
                       } else {
                         // print("triggered");
                         showDialog(
