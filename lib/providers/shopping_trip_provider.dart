@@ -131,6 +131,7 @@ class ShoppingTrip with ChangeNotifier{
   }
 
   // for initializing the trip within the database
+
   Future<void> initializeTripDB() async {
      await tripCollection.doc(_uuid).set(
         {'uuid': _uuid,
