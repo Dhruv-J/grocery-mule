@@ -16,15 +16,16 @@ class ShoppingTrip with ChangeNotifier{
   Receipt _receipt;
 
   // from user creation screen for metadata
-  initializeTrip(String title, DateTime date, String description, String host) {
+  Future<void> initializeTrip(String title, DateTime date, String description, Map<String,String> uid_name, String host) async {
     var uuider = Uuid();
     _uuid = uuider.v4();
     _title = title;
     _date = date;
     _description = description;
     _host = host;
+    _beneficiaries = uid_name;
     print(_date);
-    initializeTripDB();
+    await initializeTripDB();
     notifyListeners();
   }
   // takes in formatted data from snapshot to directly update the provider
@@ -83,20 +84,24 @@ class ShoppingTrip with ChangeNotifier{
   }
 
   // adds beneficiary, notifies listeners, updates database
-  addBeneficiary(String beneficiary_uuid, String hostFirstName) {
-    _beneficiaries[beneficiary_uuid] = hostFirstName;
-    _items.forEach((name, item) {
-      item.addBeneficiary(beneficiary_uuid);
-    });
+  addBeneficiary(String beneficiary_uuid, String name) {
+    _beneficiaries[beneficiary_uuid] = name;
+    if(_items.isNotEmpty) {
+      _items.forEach((name, item) {
+        item.addBeneficiary(beneficiary_uuid);
+      });
+    }
     updateBeneficiaryDB();
     notifyListeners();
   }
   // removes beneficiary, notifies listeners, updates database
   removeBeneficiary(String beneficiary_uuid) {
     _beneficiaries.remove(beneficiary_uuid);
-    _items.forEach((name, item) {
-      item.removeBeneficiary(beneficiary_uuid);
-    });
+    if(_items.isNotEmpty) {
+      _items.forEach((name, item) {
+        item.removeBeneficiary(beneficiary_uuid);
+      });
+    }
     updateBeneficiaryDB();
     notifyListeners();
   }
@@ -126,8 +131,8 @@ class ShoppingTrip with ChangeNotifier{
   }
 
   // for initializing the trip within the database
-  initializeTripDB() {
-     tripCollection.doc(_uuid).set(
+  Future<void> initializeTripDB() async {
+     await tripCollection.doc(_uuid).set(
         {'uuid': _uuid,
           'title': _title,
           'date': _date,

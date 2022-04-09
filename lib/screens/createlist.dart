@@ -11,7 +11,7 @@ import 'package:grocery_mule/providers/shopping_trip_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:number_inc_dec/number_inc_dec.dart';
-
+import 'dart:io';
 typedef StringVoidFunc = void Function(String,int);
 
 class CreateListScreen extends StatefulWidget {
@@ -106,6 +106,11 @@ class _CreateListsScreenState extends State<CreateListScreen> {
               uid_name, items);
 
         });
+      }else{
+        uid_name[hostUUID] = hostFirstName;
+        uid_name['AU8H9TXaKHckfCKIjyDBWFqQRGf2'] = 'Praf';
+        uid_name['yTWmoo2Qskf3wFcbxaJYUt9qrZM2'] = 'Dhruv';
+
       }
     });
   }
@@ -143,13 +148,14 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     }
   }
 
-  void updateGridView(bool new_trip) async {
+  Future<void> updateGridView(bool new_trip) async {
       if(new_trip) {
         print("made here");
-        context.read<ShoppingTrip>().initializeTrip(
+        await context.read<ShoppingTrip>().initializeTrip(
             context.read<ShoppingTrip>().title,
             context.read<ShoppingTrip>().date,
             context.read<ShoppingTrip>().description,
+            uid_name,
             curUser.uid);
         context.read<ShoppingTrip>().addBeneficiary(hostUUID,hostFirstName);
         context.read<ShoppingTrip>().addBeneficiary('AU8H9TXaKHckfCKIjyDBWFqQRGf2','Praf');
@@ -296,13 +302,14 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                   height: 70,
                   width: 5,
                   child: RoundedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if(context.read<ShoppingTrip>().title != '') {
-                        updateGridView(newList);
+                        await updateGridView(newList);
                         Navigator.pop(context);
                         //Navigator.pushNamed(context, ListsScreen.id);
                         if(newList)
                           Navigator.push(context, MaterialPageRoute(builder: (context) => EditListScreen(context.read<Cowboy>().uuid)));
+
                       } else {
                         // print("triggered");
                         showDialog(
