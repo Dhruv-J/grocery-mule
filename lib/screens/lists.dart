@@ -157,7 +157,6 @@ class _ListsScreenState extends State<ListsScreen> {
           ),
 
           body:
-
           FutureBuilder(
             future: Cowsnapshot,
             builder: (context, AsyncSnapshot<void> futSnap) {
