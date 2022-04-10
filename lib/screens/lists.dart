@@ -97,7 +97,7 @@ class _ListsScreenState extends State<ListsScreen> {
           appBar: AppBar(
             centerTitle: true,
             title: const Text('Grocery Lists'),
-            backgroundColor: const Color(0xFFbc5100),
+            backgroundColor: const Color(0xff97877E),
           ),
           drawer: Drawer(
             child: ListView(
