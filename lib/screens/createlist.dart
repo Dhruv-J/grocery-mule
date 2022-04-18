@@ -81,7 +81,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     super.initState();
 
     friend_bene = context.read<Cowboy>().friends.keys
-        .map((uid) => MultiSelectItem<String>(uid,context.read<Cowboy>().friends[uid]))
+        .map((uid) => MultiSelectItem<String>(uid,context.read<Cowboy>().friends[uid].split("|~|")[1].split(" ")[0]))
         .toList();
 
 
