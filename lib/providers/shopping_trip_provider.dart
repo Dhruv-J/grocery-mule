@@ -69,7 +69,7 @@ class ShoppingTrip with ChangeNotifier {
 
   editTripDate(DateTime date) {
     _date = date;
-    notifyListeners();
+    //notifyListeners();
   }
 
   editTripDescription(String description) {
@@ -202,8 +202,12 @@ class ShoppingTrip with ChangeNotifier {
     tripCollection.doc(_uuid).update({'date': _date});
   }
 
-  deleteTripDB() {
+  deleteTripDB() async {
     print(_uuid);
+    itemUUID.forEach((uid) {
+      tripCollection.doc(_uuid).collection('items').doc(uid).delete();
+    });
+    tripCollection.doc(_uuid).collection('items').doc('dummy').delete();
     tripCollection.doc(_uuid).delete();
     notifyListeners();
   }

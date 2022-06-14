@@ -103,6 +103,65 @@ class _ShoppingTripQueryState extends State<ShoppingTripQuery> {
   }
 }
 
+class ShoppingCollectionQuery extends StatefulWidget {
+  late List<String> personalTrips;
+  ShoppingCollectionQuery(this.personalTrips) {
+  }
+
+  @override
+  _ShoppingCollectionQueryState createState() => _ShoppingCollectionQueryState();
+}
+
+class _ShoppingCollectionQueryState extends State<ShoppingCollectionQuery> {
+  final CollectionReference shoppingTripCollection =
+  FirebaseFirestore.instance.collection('shopping_trips_02');
+  late List<String> personalTrips;
+  @override
+  void initState() {
+    personalTrips = widget.personalTrips;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return StreamBuilder<QuerySnapshot>(
+        stream: shoppingTripCollection.orderBy('date',descending: true).snapshots(),
+        builder:
+            (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.hasError) {
+            return const Text('Something went wrong');
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Text("Loading");
+          }
+          List<String> sortedList = [];
+          if(snapshot.hasData){
+            snapshot.data!.docs.forEach((doc) {
+              if(personalTrips.contains(doc['uuid']))
+                sortedList.add(doc['uuid']);
+            });
+          }
+          return SafeArea(
+            child: Scrollbar(
+              isAlwaysShown: true,
+              child: GridView.builder(
+                padding: EdgeInsets.all(8),
+                itemCount: sortedList.length,
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 7),
+                itemBuilder: (context, int index) {
+                  return new ShoppingTripQuery(sortedList[
+                  index]); //renderList(context.watch<Cowboy>().shoppingTrips[index]);
+                },
+              ),
+            ),
+          );
+        });
+  }
+}
 class _ListsScreenState extends State<ListsScreen> {
   final _auth = FirebaseAuth.instance;
   final User? curUser = FirebaseAuth.instance.currentUser;
@@ -266,28 +325,9 @@ class _ListsScreenState extends State<ListsScreen> {
               }
               readInData(snapshot.data!);
               print(context.watch<Cowboy>().shoppingTrips);
-
-              return SafeArea(
-                child: Scrollbar(
-                  isAlwaysShown: true,
-                  child: GridView.builder(
-                    padding: EdgeInsets.all(8),
-                    itemCount: context.watch<Cowboy>().shoppingTrips.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 7),
-                    itemBuilder: (context, int index) {
-                      return new ShoppingTripQuery(context
-                              .watch<Cowboy>()
-                              .shoppingTrips[
-                          index]); //renderList(context.watch<Cowboy>().shoppingTrips[index]);
-                    },
-                  ),
-                ),
-              );
-            }),
+              return ShoppingCollectionQuery(context.watch<Cowboy>().shoppingTrips);
+            }
+        ),
         floatingActionButton: Container(
           height: 80,
           width: 80,

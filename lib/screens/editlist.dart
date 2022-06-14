@@ -558,6 +558,8 @@ class _EditListsScreenState extends State<EditListScreen> {
                 builder: (context) => CreateListScreen(
                     false, context.read<ShoppingTrip>().uuid)));
         setState(() {});
+        break;
+
     }
   }
 
@@ -587,10 +589,14 @@ class _EditListsScreenState extends State<EditListScreen> {
               handleClick(item),
             },
             itemBuilder: (context) => [
-              PopupMenuItem<int>(value: 1, child: Text('Trip Settings')),
+              (context.read<Cowboy>().uuid == context.read<ShoppingTrip>().host)?
+              PopupMenuItem<int>(value: 1, child: Text('Trip Settings')):
+              PopupMenuItem<int>(value: 1, child: Text('Leave Trip')),
             ],
           ),
         ],
+
+
       ),
       body: StreamBuilder<DocumentSnapshot<Object?>>(
           stream: listStream,
