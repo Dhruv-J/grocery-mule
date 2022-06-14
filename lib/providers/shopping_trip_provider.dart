@@ -69,7 +69,7 @@ class ShoppingTrip with ChangeNotifier {
 
   editTripDate(DateTime date) {
     _date = date;
-    // notifyListeners();
+    notifyListeners();
   }
 
   editTripDescription(String description) {

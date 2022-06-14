@@ -105,6 +105,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   List<String> friend_bene = [];
   //List<String> selected_friend = [];
   Map<String, String> friendsName = {};
+  DateTime localTime = DateTime.now();
   @override
   void initState() {
     trip_uuid = widget.trip_uuid;
@@ -139,6 +140,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     List<String> beneficiaries = <String>[];
     Map<String, Item> items = <String, Item>{};
     date = (snapshot.data() as Map<String, dynamic>)['date'].toDate();
+    localTime = date;
     (snapshot['beneficiaries'] as List<dynamic>).forEach((uid) {
       uid_name.add(uid);
     });
@@ -151,6 +153,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
         (snapshot.data() as Map<String, dynamic>)['host'],
         uid_name);
     // });
+
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -162,6 +165,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     );
     if (picked != null && picked != context.read<ShoppingTrip>().date) {
       context.read<ShoppingTrip>().editTripDate(picked);
+      localTime = picked;
     }
   }
 
@@ -319,8 +323,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                         SizedBox(
                           width: 10.0,
                         ),
-                        Text(
-                          '${context.watch<ShoppingTrip>().date.toLocal()}'
+                        Text('$localTime'
                               .split(' ')[0]
                               .replaceAll('-', '/'),
                           style: TextStyle(
