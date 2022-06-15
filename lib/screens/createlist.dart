@@ -202,35 +202,21 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     } else {
       List<String> new_bene_list = [];
       //check if any bene needs to be removed
-      context.read<ShoppingTrip>().beneficiaries.forEach((uid) {
-        if (!friend_bene.contains(uid)) {
-          //below doesn't work
-          context
-              .read<Cowboy>()
-              .RemoveTripFromBene(uid, context.read<ShoppingTrip>().uuid);
-          context.read<ShoppingTrip>().removeBeneficiary(uid);
-        } else {
-          new_bene_list.add(uid);
-        }
-      });
-      context.read<ShoppingTrip>().setBeneficiary(new_bene_list);
+      context.read<ShoppingTrip>().removeBeneficiaries(friend_bene);
       //check if new bene need to be added
       for (var friend in friend_bene) {
         if (!context.read<ShoppingTrip>().beneficiaries.contains(friend)) {
-          //context.read<ShoppingTrip>().addBeneficiary(friend, context.read<Cowboy>().friends[friend]);
-          context.read<Cowboy>().addTripToBene(
-                friend,
-                context.read<ShoppingTrip>().uuid,
-              );
+          // context.read<ShoppingTrip>().addBeneficiary(friend, context.read<Cowboy>().friends[friend]);
+          context.read<Cowboy>().addTripToBene(friend, context.read<ShoppingTrip>().uuid,);
         }
-        //addTripToBene(String bene_uuid, String trip_uuid)
+        // addTripToBene(String bene_uuid, String trip_uuid)
       }
       context.read<ShoppingTrip>().updateTripMetadata(
-            context.read<ShoppingTrip>().title,
-            context.read<ShoppingTrip>().date,
-            context.read<ShoppingTrip>().description,
-            context.read<ShoppingTrip>().beneficiaries,
-          );
+        context.read<ShoppingTrip>().title,
+        context.read<ShoppingTrip>().date,
+        context.read<ShoppingTrip>().description,
+        context.read<ShoppingTrip>().beneficiaries,
+      );
       // await DatabaseService(uuid: trip.uuid).updateShoppingTrip(trip);
     }
   }
@@ -472,11 +458,18 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                               ),
                               onConfirm: (results) {
                                 print(results.toList());
+                                List<String> temp = [];
                                 results.forEach((friend) {
+                                  temp.add(friend.toString());
                                   if (!friend_bene.contains(friend.toString()))
                                     friend_bene.add(friend.toString());
                                 });
-                                print(friend_bene);
+                                context.read<ShoppingTrip>().setBeneficiary(temp);
+                                if (!newList) {
+                                  context.read<ShoppingTrip>().updateBeneficiaryDB();
+                                }
+                                // shoppingTripCollection.doc(context.read<ShoppingTrip>().uuid).update({'beneficiaries': results});
+                                // print('benes: ' + friend_bene.toString());
                               },
                             );
                           }),

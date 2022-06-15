@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 
-final CollectionReference tripCollection =
-    FirebaseFirestore.instance.collection('shopping_trips_02');
+final CollectionReference tripCollection = FirebaseFirestore.instance.collection('shopping_trips_02');
 
 // shopping trip provider
 class ShoppingTrip with ChangeNotifier {
@@ -16,6 +15,7 @@ class ShoppingTrip with ChangeNotifier {
   List<String> _beneficiaries = [];
   List<String> itemUUID = [];
   late Receipt _receipt;
+  CollectionReference userCollection = FirebaseFirestore.instance.collection('users_02');
 
   // from user creation screen for metadata
   Future<void> initializeTrip(String title, DateTime date, String description,
@@ -138,6 +138,31 @@ class ShoppingTrip with ChangeNotifier {
         });
     updateBeneficiaryDB();
     notifyListeners();
+  }
+
+  removeBeneficiaries(List<String> bene_uuids) {
+    _beneficiaries.removeWhere((element) => bene_uuids.contains(element));
+    bene_uuids.forEach((String bene_uuid) {
+      removeBeneficiaryFromItems(bene_uuid);
+      userCollection.doc(bene_uuid).update({'shopping_trips': FieldValue.arrayRemove([_uuid])});
+    });
+  }
+
+  removeBeneficiaryFromItems(String bene_uuid) {
+    itemUUID.forEach((item) {
+      tripCollection.doc(_uuid).collection('items').get().then((collection) => {
+        collection.docs.forEach((document) async {
+          Map<String, int> bene_items= {};
+          (document.data()['subitems'] as Map<String, dynamic>)
+              .forEach((uuid, quantity) {
+            bene_items[uuid] = int.parse(quantity.toString());
+          });
+          bene_items.remove(bene_uuid);
+          await document.reference.update({"subitems": bene_items});
+        })
+      });
+      // tripCollection.doc(_uuid).collection('items').doc(item).update({'subitems':}));
+    });
   }
 
   // user adds an item for first time
