@@ -61,6 +61,14 @@ class _ShoppingTripQueryState extends State<ShoppingTripQuery> {
             return const Text("Loading");
           }
           if (snapshot.data!.data() != null) {
+            String desc_short = snapshot.data!['description'];
+            String title_short = snapshot.data!['title'];
+            if(title_short.length > 12){
+              title_short = title_short.substring(0,11) + "...";
+            }
+            if(desc_short.length > 12){
+              desc_short = desc_short.substring(0,11) + "...";
+            }
             return Container(
               width: 80,
               height: 80,
@@ -77,8 +85,8 @@ class _ShoppingTripQueryState extends State<ShoppingTripQuery> {
               ),
               child: ListTile(
                 title: Text(
-                  '\n${snapshot.data!['title']}\n'
-                          '${snapshot.data!['description']}\n\n'
+                  '\n${title_short}\n'
+                          '${desc_short}\n\n'
                           '${(snapshot.data!['date'] as Timestamp).toDate().month}' +
                       '/' +
                       '${(snapshot.data!['date'] as Timestamp).toDate().day}' +
