@@ -1,3 +1,5 @@
+//import 'dart:html';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -159,6 +161,11 @@ class Cowboy with ChangeNotifier {
     userCollection.doc(friendUUID).update({'friends': FieldValue.arrayUnion([_uuid])});
   }
 
+  leaveTrip(String tripUid) async {
+    _shoppingTrips.remove(tripUid);
+    userCollection.doc(_uuid).update({'shopping_trips': _shoppingTrips});
+    notifyListeners();
+  }
   removeFriendRequest(String friendUUID) {
     _requests.remove(friendUUID);
     updateCowboyRequestsRemove(friendUUID);

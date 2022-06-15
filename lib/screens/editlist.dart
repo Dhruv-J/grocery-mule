@@ -446,7 +446,7 @@ class _EditListsScreenState extends State<EditListScreen> {
   late String hostFirstName;
   List<String> bene_uid = [];
   static bool reload = true;
-
+  bool leave_list = false;
   late Stream<DocumentSnapshot<Object?>>? listStream;
 
   @override
@@ -549,7 +549,7 @@ class _EditListsScreenState extends State<EditListScreen> {
     );
   }
 
-  void handleClick(int item) {
+  Future<void> handleClick(int item) async {
     switch (item) {
       case 1:
         Navigator.push(
@@ -559,10 +559,42 @@ class _EditListsScreenState extends State<EditListScreen> {
                     false, context.read<ShoppingTrip>().uuid)));
         setState(() {});
         break;
-
+      case 2:
+        await check_leave(context);
+        if(leave_list){
+          context.read<Cowboy>().leaveTrip(context.read<ShoppingTrip>().uuid);
+          context.read<ShoppingTrip>().removeBeneficiary(context.read<Cowboy>().uuid);
+          Navigator.of(context).pop();
+        }
     }
   }
 
+  check_leave(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm"),
+          content: const Text("Are you sure you wish to leave this trip?"),
+          actions: <Widget>[
+            FlatButton(
+                onPressed: () => {
+                  leave_list = true,
+                  Navigator.of(context).pop(),
+                },
+                child: const Text("Leave")),
+            FlatButton(
+              onPressed: () => {
+                leave_list = false,
+                Navigator.of(context).pop(),
+              },
+              child: const Text("CANCEL"),
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Masterlist(context);
@@ -591,7 +623,7 @@ class _EditListsScreenState extends State<EditListScreen> {
             itemBuilder: (context) => [
               (context.read<Cowboy>().uuid == context.read<ShoppingTrip>().host)?
               PopupMenuItem<int>(value: 1, child: Text('Trip Settings')):
-              PopupMenuItem<int>(value: 1, child: Text('Leave Trip')),
+              PopupMenuItem<int>(value: 2, child: Text('Leave Trip')),
             ],
           ),
         ],

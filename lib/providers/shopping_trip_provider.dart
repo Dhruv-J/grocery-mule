@@ -183,6 +183,8 @@ class ShoppingTrip with ChangeNotifier {
     notifyListeners();
   }
 
+
+
   // for initializing the trip within the database
 
   Future<void> initializeTripDB() async {
