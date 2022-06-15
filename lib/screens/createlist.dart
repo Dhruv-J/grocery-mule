@@ -162,6 +162,16 @@ class _CreateListsScreenState extends State<CreateListScreen> {
       initialDate: context.read<ShoppingTrip>().date,
       firstDate: DateTime(2022),
       lastDate: DateTime(2050),
+      builder: (context, child) => Theme(
+          data: ThemeData().copyWith(
+            colorScheme: ColorScheme.light(
+              primary:  Colors.amber,
+              onPrimary: Colors.white,
+              onSurface: Colors.black
+            )
+          ),
+          child: child!,
+       )
     );
     if (picked != null && picked != context.read<ShoppingTrip>().date) {
       context.read<ShoppingTrip>().editTripDate(picked);
