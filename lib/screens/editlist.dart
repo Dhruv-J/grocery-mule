@@ -631,7 +631,7 @@ class _EditListsScreenState extends State<EditListScreen> {
 
       ),
       body: StreamBuilder<DocumentSnapshot<Object?>>(
-          stream: listStream,
+          stream: shoppingTripCollection.doc(tripUUID).snapshots(),
           builder:
               (context, AsyncSnapshot<DocumentSnapshot<Object?>> snapshot) {
             if (snapshot.hasError) {
@@ -685,9 +685,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                           "Beneficiaries",
                         ),
                         children: [
-                          for (String name in context.select(
-                              (ShoppingTrip cur_trip) =>
-                                  cur_trip.beneficiaries))
+                          for (String name in context.watch<ShoppingTrip>().beneficiaries)
                             ListTile(
                               title: UserName(name),
                             )

@@ -111,6 +111,7 @@ class ShoppingTrip with ChangeNotifier {
   // adds beneficiary, notifies listeners, updates database
   addBeneficiary(String beneficiary_uuid) {
     _beneficiaries.add(beneficiary_uuid);
+    userCollection.doc(beneficiary_uuid).update({'shopping_trips': FieldValue.arrayUnion([_uuid])});
     //add bene to every item document
     tripCollection.doc(_uuid).collection('items').get().then((collection) => {
           collection.docs.forEach((document) async {
@@ -142,11 +143,16 @@ class ShoppingTrip with ChangeNotifier {
 
   removeBeneficiaries(List<String> bene_uuids) {
     _beneficiaries.removeWhere((element) => bene_uuids.contains(element));
+    print("modified");
+    print(_beneficiaries);
     bene_uuids.forEach((String bene_uuid) {
       removeBeneficiaryFromItems(bene_uuid);
+      tripCollection.doc(_uuid).update({'beneficiaries': FieldValue.arrayRemove([bene_uuid])});
       userCollection.doc(bene_uuid).update({'shopping_trips': FieldValue.arrayRemove([_uuid])});
     });
+    notifyListeners();
   }
+
 
   removeBeneficiaryFromItems(String bene_uuid) {
     itemUUID.forEach((item) {
@@ -158,11 +164,13 @@ class ShoppingTrip with ChangeNotifier {
             bene_items[uuid] = int.parse(quantity.toString());
           });
           bene_items.remove(bene_uuid);
+          print(bene_items);
           await document.reference.update({"subitems": bene_items});
         })
       });
       // tripCollection.doc(_uuid).collection('items').doc(item).update({'subitems':}));
     });
+    notifyListeners();
   }
 
   // user adds an item for first time
@@ -235,6 +243,13 @@ class ShoppingTrip with ChangeNotifier {
       tripCollection.doc(_uuid).collection('items').doc(uid).delete();
     });
     tripCollection.doc(_uuid).collection('items').doc('dummy').delete();
+    _beneficiaries.forEach((bene) {
+      userCollection.doc(bene).update(
+        {
+        'shopping_trips': FieldValue.arrayRemove([_uuid])
+        }
+      );
+    });
     tripCollection.doc(_uuid).delete();
     notifyListeners();
   }

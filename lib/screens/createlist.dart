@@ -200,14 +200,26 @@ class _CreateListsScreenState extends State<CreateListScreen> {
             context.read<ShoppingTrip>().uuid,
           );
     } else {
-      List<String> new_bene_list = [];
+      print("made hereee 1");
+      List<String> removeList = [];
+      print("cur bene: " + context.read<ShoppingTrip>().beneficiaries.toString());
+      print("new bene: " + friend_bene.toString());
+      context.read<ShoppingTrip>().beneficiaries.forEach((old_bene) {
+        if(!friend_bene.contains(old_bene)) {
+          print("remove: " + old_bene);
+          removeList.add(old_bene);
+        }
+      });
       //check if any bene needs to be removed
-      context.read<ShoppingTrip>().removeBeneficiaries(friend_bene);
+      context.read<ShoppingTrip>().removeBeneficiaries(removeList);
+
       //check if new bene need to be added
       for (var friend in friend_bene) {
+
         if (!context.read<ShoppingTrip>().beneficiaries.contains(friend)) {
-          // context.read<ShoppingTrip>().addBeneficiary(friend, context.read<Cowboy>().friends[friend]);
-          context.read<Cowboy>().addTripToBene(friend, context.read<ShoppingTrip>().uuid,);
+          print(friend);
+           context.read<ShoppingTrip>().addBeneficiary(friend);
+          //context.read<Cowboy>().addTripToBene(friend, context.read<ShoppingTrip>().uuid,);
         }
         // addTripToBene(String bene_uuid, String trip_uuid)
       }
@@ -416,8 +428,6 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                     document.get('first_name')));
                               }
                             });
-
-                            print(snapshot.data!.docs.length);
                             return MultiSelectDialogField(
                               searchable: true,
                               items: friends,
@@ -434,16 +444,6 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                   width: 2,
                                 ),
                               ),
-                              chipDisplay: MultiSelectChipDisplay(
-                                onTap: (item) {
-                                  setState(() {
-                                    context
-                                        .read<ShoppingTrip>()
-                                        .beneficiaries
-                                        .remove(item);
-                                  });
-                                },
-                              ),
                               buttonIcon: Icon(
                                 Icons.person,
                                 color: orange,
@@ -457,19 +457,11 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                 ),
                               ),
                               onConfirm: (results) {
-                                print(results.toList());
-                                List<String> temp = [];
+                                //print(results.toList());
                                 results.forEach((friend) {
-                                  temp.add(friend.toString());
                                   if (!friend_bene.contains(friend.toString()))
                                     friend_bene.add(friend.toString());
                                 });
-                                context.read<ShoppingTrip>().setBeneficiary(temp);
-                                if (!newList) {
-                                  context.read<ShoppingTrip>().updateBeneficiaryDB();
-                                }
-                                // shoppingTripCollection.doc(context.read<ShoppingTrip>().uuid).update({'beneficiaries': results});
-                                // print('benes: ' + friend_bene.toString());
                               },
                             );
                           }),
