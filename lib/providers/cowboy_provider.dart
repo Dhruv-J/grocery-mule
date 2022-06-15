@@ -185,15 +185,15 @@ class Cowboy with ChangeNotifier {
     userCollection.doc(friendUUID).update({'friends': amigos});
   }
 
+  // updates cowboy with bene_uuid's shopping trips to have trip_uuid
   addTripToBene(String bene_uuid, String trip_uuid){
     userCollection.doc(bene_uuid).update({'shopping_trips': FieldValue.arrayUnion([trip_uuid])});
   }
-  //change this to overwrite
+  // removes trip with trip_uuid from cowboy with bene_uuid
   RemoveTripFromBene(String bene_uuid, String trip_uuid) async {
-    Map<String,String> shoppingTrips = await fetchBeneTrip(bene_uuid);
-    shoppingTrips.remove(trip_uuid);
-    userCollection.doc(bene_uuid).update({'shopping_trips': shoppingTrips});
+    userCollection.doc(bene_uuid).update({'shopping_trips': FieldValue.arrayRemove([trip_uuid])});
   }
+
   // adds friend request, notifies listeners, and updates database
   sendFriendRequest(String friendUUID) {
     // _requests.add(friendUUID);
