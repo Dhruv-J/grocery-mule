@@ -108,6 +108,11 @@ class ShoppingTrip with ChangeNotifier {
     _beneficiaries = new_bene_list;
   }
 
+  // setLiveBeneList(List<String> new_bene_list) {
+  //   _beneficiaries = new_bene_list;
+  //   notifyListeners();
+  // }
+
   // adds beneficiary, notifies listeners, updates database
   addBeneficiary(String beneficiary_uuid) {
     _beneficiaries.add(beneficiary_uuid);
@@ -294,6 +299,10 @@ class Item {
 
   removeBeneficiary(String beneficiary) {
     subitems.remove(beneficiary);
+  }
+
+  setSubitems(Map<String, int> subs) {
+    this.subitems = subs;
   }
 }
 
