@@ -20,7 +20,9 @@ var userNameTextGroup = AutoSizeGroup();
 
 class UserName extends StatefulWidget {
   late final String userUUID;
-  UserName(String userUUID) {
+  UserName(String userUUID, [bool spec=false, bool strng=false]) {
+    // if (spec) print('spec uuid: $userUUID');
+    // if (strng) print('strng uuid: $userUUID');
     this.userUUID = userUUID;
   }
 
@@ -49,6 +51,7 @@ class _UserNameState extends State<UserName> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
           }
+          // print('name for uuid ($userUUID): ' + snapshot.data!['first_name']);
           return Text(
             '${snapshot.data!['first_name']} ',
             style: TextStyle(fontSize: 20, color: Colors.red),
@@ -141,7 +144,6 @@ class _ItemsListState extends State<ItemsList> {
     //check if any local uuid needs to be deleted
     context.read<ShoppingTrip>().itemUUID.forEach((itemID) {
       if (!rawItemList.contains(itemID)) {
-        print("should be here");
         tobeDeleted.add(itemID);
       }
     });
@@ -160,7 +162,6 @@ class _ItemsListState extends State<ItemsList> {
                 IndividualItem(context.read<ShoppingTrip>().uuid, item_uuid)] =
             IndividualItemExpanded(
                 context.read<ShoppingTrip>().uuid, item_uuid);
-        print('made here 2');
         print(itemObjList[item_uuid]!.keys.first.itemID);
       }
     });
@@ -168,7 +169,6 @@ class _ItemsListState extends State<ItemsList> {
     List<String> tobeDeleted = [];
     itemObjList.forEach((key, value) {
       if (!context.read<ShoppingTrip>().itemUUID.contains(key)) {
-        print("should be here1");
         tobeDeleted.add(key);
       }
     });
@@ -225,7 +225,10 @@ class _IndividualItemState extends State<IndividualItem> {
   void loadItem(DocumentSnapshot snapshot) {
     curItem.name = snapshot['name'];
     curItem.quantity = snapshot['quantity'];
+    curItem.subitems = {};
     (snapshot['subitems'] as Map<String, dynamic>).forEach((uid, value) {
+      int count = curItem.subitems.keys.length;
+      // print('loadItem (individual) called with uid: {$uid}, value: {$value}, length: {$count}');
       curItem.subitems[uid] = int.parse(value.toString());
     });
   }
@@ -348,17 +351,24 @@ class _IndividualItemExpandedState extends State<IndividualItemExpanded> {
   void loadItem(DocumentSnapshot snapshot) {
     curItem.name = snapshot['name'];
     curItem.quantity = snapshot['quantity'];
+    curItem.subitems = {};
+    List<String> bene_list = [];
     (snapshot['subitems'] as Map<String, dynamic>).forEach((uid, value) {
+      int count = curItem.subitems.keys.length;
+      // print('loadItem (expanded) called with uid: {$uid}, value: {$value}, length: {$count}');
+      bene_list.add(uid);
       curItem.subitems[uid] = int.parse(value.toString());
     });
+    context.read<ShoppingTrip>().setBeneficiary(bene_list);
   }
 
   Widget indie_item(String uid, int number, StringVoidFunc callback) {
+    // print('uid of user (indie_item): ${uid}');
     return Container(
       color: beige,
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
         Container(
-          child: UserName(uid),
+          child: UserName(uid, true),
           padding: EdgeInsets.all(20),
         ),
         Container(
@@ -373,6 +383,7 @@ class _IndividualItemExpandedState extends State<IndividualItemExpanded> {
                     callback(uid, newlyDecrementedValue as int);
                   },
                 )
+          // TODO vvvv--- maybe issue here???
               : Text(
                   'x$number',
                   style: TextStyle(
@@ -389,7 +400,8 @@ class _IndividualItemExpandedState extends State<IndividualItemExpanded> {
 
   Widget expanded_item() {
     void updateUsrQuantity(String person, int number) {
-      setState(() {
+      //setState(() {
+      //curItem.subitems = {};
         curItem.subitems[person] = number;
         context.read<ShoppingTrip>().editItem(
             itemID,
@@ -397,8 +409,8 @@ class _IndividualItemExpandedState extends State<IndividualItemExpanded> {
             person,
             number);
         // TODO update database here for quant
-      });
-    }
+        }
+      //);}
 
     ;
     return Container(
@@ -472,9 +484,12 @@ class _EditListsScreenState extends State<EditListScreen> {
   void _queryCurrentTrip(DocumentSnapshot curTrip) {
     DateTime date = DateTime.now();
     date = (curTrip['date'] as Timestamp).toDate();
+    List<String> temp_bene_uid = [];
     (curTrip['beneficiaries'] as List<dynamic>).forEach((uid) {
+      temp_bene_uid.add(uid.toString());
       if (!bene_uid.contains(uid)) bene_uid.add(uid.toString());
     });
+    bene_uid = temp_bene_uid;
 
     context.read<ShoppingTrip>().initializeTripFromDB(
         curTrip['uuid'],
@@ -556,8 +571,7 @@ class _EditListsScreenState extends State<EditListScreen> {
             context,
             MaterialPageRoute(
                 builder: (context) => CreateListScreen(
-                    false, context.read<ShoppingTrip>().uuid)));
-        setState(() {});
+                    false, context.read<ShoppingTrip>().uuid))).then((_) => setState(() {}));
         break;
       case 2:
         await check_leave(context);
@@ -665,7 +679,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                           fontSize: 20,
                         ),
                       ),
-                      UserName(context.read<ShoppingTrip>().host),
+                      UserName(context.read<ShoppingTrip>().host, false, true),
                     ],
                   ),
                   SizedBox(
@@ -685,9 +699,10 @@ class _EditListsScreenState extends State<EditListScreen> {
                           "Beneficiaries",
                         ),
                         children: [
+                          // TODO error right vvvvvvv should be watching beneficaries from firebase not from context
                           for (String name in context.watch<ShoppingTrip>().beneficiaries)
                             ListTile(
-                              title: UserName(name),
+                              title: UserName(name, false, true),
                             )
                         ],
                       ),
