@@ -112,8 +112,7 @@ class _ShoppingTripQueryState extends State<ShoppingTripQuery> {
 }
 
 class ShoppingCollectionQuery extends StatefulWidget {
-  late List<String> personalTrips;
-  ShoppingCollectionQuery(this.personalTrips) {
+  ShoppingCollectionQuery() {
   }
 
   @override
@@ -123,10 +122,10 @@ class ShoppingCollectionQuery extends StatefulWidget {
 class _ShoppingCollectionQueryState extends State<ShoppingCollectionQuery> {
   final CollectionReference shoppingTripCollection =
   FirebaseFirestore.instance.collection('shopping_trips_02');
-  late List<String> personalTrips;
+  //late List<String> personalTrips;
   @override
   void initState() {
-    personalTrips = widget.personalTrips;
+    //personalTrips = widget.personalTrips;
   }
 
   @override
@@ -142,13 +141,17 @@ class _ShoppingCollectionQueryState extends State<ShoppingCollectionQuery> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Text("Loading");
           }
+          print(context.watch<Cowboy>().shoppingTrips);
           List<String> sortedList = [];
           if(snapshot.hasData){
             snapshot.data!.docs.forEach((doc) {
-              if(personalTrips.contains(doc['uuid']))
+              if(context.watch<Cowboy>().shoppingTrips.contains(doc['uuid'])) {
                 sortedList.add(doc['uuid']);
+                print(doc['uuid']);
+              }
             });
           }
+          print(sortedList);
           return SafeArea(
             child: Scrollbar(
               isAlwaysShown: true,
@@ -332,8 +335,8 @@ class _ListsScreenState extends State<ListsScreen> {
                 return CircularProgressIndicator();
               }
               readInData(snapshot.data!);
-              print(context.watch<Cowboy>().shoppingTrips);
-              return ShoppingCollectionQuery(context.watch<Cowboy>().shoppingTrips);
+
+              return ShoppingCollectionQuery();
             }
         ),
         floatingActionButton: Container(

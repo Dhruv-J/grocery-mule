@@ -41,6 +41,7 @@ class _UserNameState extends State<UserName> {
 
   @override
   Widget build(BuildContext context) {
+    print("actual streamed: ${userUUID}");
     return StreamBuilder<DocumentSnapshot>(
         stream: userCollection.doc(userUUID).snapshots(),
         builder:
@@ -162,7 +163,7 @@ class _ItemsListState extends State<ItemsList> {
                 IndividualItem(context.read<ShoppingTrip>().uuid, item_uuid)] =
             IndividualItemExpanded(
                 context.read<ShoppingTrip>().uuid, item_uuid);
-        print(itemObjList[item_uuid]!.keys.first.itemID);
+        //print(itemObjList[item_uuid]!.keys.first.itemID);
       }
     });
     //check if any objmapping needs to be removed
@@ -216,6 +217,8 @@ class _IndividualItemState extends State<IndividualItem> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
           }
+
+          if (snapshot.hasError) return const CircularProgressIndicator();
           loadItem(snapshot.data!);
           return simple_item();
         });
@@ -341,28 +344,61 @@ class _IndividualItemExpandedState extends State<IndividualItemExpanded> {
             return const CircularProgressIndicator();
           }
 
-          if (!snapshot.hasData) return const CircularProgressIndicator();
+          if (snapshot.hasError) return const CircularProgressIndicator();
           loadItem(snapshot.data!);
-          return expanded_item();
+          print(curItem.subitems.length);
+          void updateUsrQuantity(String person, int number) {
+            //setState(() {
+            //curItem.subitems = {};
+            curItem.subitems[person] = number;
+            context.read<ShoppingTrip>().editItem(
+                itemID,
+                curItem.subitems.values.reduce((sum, element) => sum + element),
+                person,
+                number);
+            // TODO update database here for quant
+          }
+          //);}
+              ;
+
+          print(curItem.subitems);
+          return Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.rectangle,
+              color: beige,
+            ),
+            child: Column(
+              children: [
+                for (var entry in curItem.subitems.entries)
+                  indie_item(entry.key, entry.value, updateUsrQuantity)
+              ],
+            ),
+          );
         });
   }
 
   //this function loads stream snapshots into item
   void loadItem(DocumentSnapshot snapshot) {
-    curItem.name = snapshot['name'];
-    curItem.quantity = snapshot['quantity'];
-    curItem.subitems = {};
+    Item temp = Item.nothing();
+    temp.name = snapshot['name'];
+    temp.quantity = snapshot['quantity'];
+    temp.subitems = {};
     List<String> bene_list = [];
     (snapshot['subitems'] as Map<String, dynamic>).forEach((uid, value) {
-      int count = curItem.subitems.keys.length;
-      // print('loadItem (expanded) called with uid: {$uid}, value: {$value}, length: {$count}');
       bene_list.add(uid);
-      curItem.subitems[uid] = int.parse(value.toString());
+      temp.subitems[uid] = int.parse(value.toString());
     });
-    context.read<ShoppingTrip>().setBeneficiary(bene_list);
+
+    if(temp != curItem){
+      //setState(() {
+        curItem = temp;
+       // });
+    }
+    //context.read<ShoppingTrip>().setBeneficiary(bene_list);
   }
 
   Widget indie_item(String uid, int number, StringVoidFunc callback) {
+    print("this user: " + uid);
     // print('uid of user (indie_item): ${uid}');
     return Container(
       color: beige,
@@ -384,13 +420,15 @@ class _IndividualItemExpandedState extends State<IndividualItemExpanded> {
                   },
                 )
           // TODO vvvv--- maybe issue here???
-              : Text(
-                  'x$number',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
+              : Center(
+                child: Text(
+                    'x$number',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                    ),
                   ),
-                ),
+              ),
           height: 60,
           width: 105,
         )
@@ -411,8 +449,8 @@ class _IndividualItemExpandedState extends State<IndividualItemExpanded> {
         // TODO update database here for quant
         }
       //);}
-
     ;
+    print(curItem.subitems);
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.rectangle,
