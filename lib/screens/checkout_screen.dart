@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -129,6 +131,12 @@ class _ItemsPerPersonState extends State<ItemsPerPerson> {
   }
 
   double calculate_total() {
+
+    double dp(double val, int places){
+      num mod = pow(10.0, places);
+      return ((val * mod).round().toDouble() / mod);
+    }
+
     double total = 0;
     // print(userUUID + ' | ' + itemPrices.toString() + ' | '  + itemUUIDMapping.toString());
     // print(itemUUIDMapping.toString());
@@ -143,6 +151,7 @@ class _ItemsPerPersonState extends State<ItemsPerPerson> {
     }
     total += double.parse(widget.itemPrices['tax']!.toString()) / widget.num_bene;
     total += double.parse(widget.itemPrices['add. fees']!.toString()) / widget.num_bene;
+    total = dp(total, 2);
 
     return total;
   }
@@ -207,13 +216,11 @@ class _ItemsPerPersonState extends State<ItemsPerPerson> {
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: RectangularTextButton(
-                      text: 'Total Cost:  \$${calculate_total()}',
+                      text: 'Total Cost:  \$${calculate_total().toStringAsFixed(2)}',
                       onPressed: () {
                         beneficiary_subtotal = calculate_total();
-                        Clipboard.setData(ClipboardData(
-                            text: beneficiary_subtotal.toString()));
-                        Fluttertoast.showToast(
-                            msg: 'Price copied to clipboard!');
+                        Clipboard.setData(ClipboardData(text: beneficiary_subtotal.toString()));
+                        Fluttertoast.showToast(msg: 'Price copied to clipboard!');
                       },
                     ),
                   ),
@@ -356,17 +363,17 @@ class _CheckoutScreen extends State<CheckoutScreen> {
                         key: Key(aggre_raw_list.keys.toList()[index]));
                   },
                 ),
-
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 35.w),
-                  child: RectangularTextIconButton(
-                    text: "Receipt Scanning",
-                    buttonColor: Colors.lightGreen,
-                    icon: Icon(Icons.search_rounded),
-                    textColor: Colors.white,
-                    onPressed: () {
-                      Navigator.pushNamed(context, ReceiptScanning.id);
-                    },
+                GestureDetector(
+                  onTap: () {Navigator.pushNamed(context, ReceiptScanning.id);},
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 35.w),
+                    child: RectangularTextIconButton(
+                      text: "Receipt Scanning",
+                      buttonColor: Colors.lightGreen,
+                      icon: Icon(Icons.search_rounded),
+                      textColor: Colors.white,
+                      onPressed: () {},
+                    ),
                   ),
                 ),
                 // Container(

@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:grocery_mule/components/rounded_ button.dart';
 import 'package:grocery_mule/constants.dart';
@@ -263,6 +264,7 @@ class _IndividualItemState extends State<IndividualItem> {
                     ),
                     onPressed: () {
                       setState(() {
+                        Fluttertoast.showToast(msg: 'removed item');
                         context.read<ShoppingTrip>().removeItem(widget.itemID);
                       });
                     },
