@@ -710,41 +710,6 @@ class _EditListsScreenState extends State<EditListScreen> {
                                 ))),
                       ),
                     ),
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.start,
-                    //   children: [
-                    //     SizedBox(
-                    //       width: 10.0,
-                    //     ),
-                    //     Text(
-                    //       'Beneficiaries - ',
-                    //       style: TextStyle(
-                    //         color: Colors.black,
-                    //         fontSize: 20,
-                    //       ),
-                    //     ),
-                    //     Badge(
-                    //       showBadge: false,
-                    //       child: TextButton(
-                    //         child: Icon(Icons.person_add_alt),
-                    //         style: ButtonStyle(
-                    //           backgroundColor:
-                    //               MaterialStateProperty.all<Color>(orange),
-                    //           foregroundColor: MaterialStateProperty.all<Color>(
-                    //               Colors.black),
-                    //         ),
-                    //         onPressed: () {
-
-                    //         },
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
-                    // SizedBox(
-                    //   height: 10,
-                    // ),
-
-                    //Segregated the Widget into two parts so that the state of the changing widget in maintained inside and changing the widget wont change the state of the whole screen
                     ItemsAddition(
                       tripUUID: tripUUID,
                     )
@@ -755,6 +720,44 @@ class _EditListsScreenState extends State<EditListScreen> {
               );
             }),
       ),
+      bottomSheet:
+          (context.read<ShoppingTrip>().host == context.read<Cowboy>().uuid)
+              ? Padding(
+                  padding: EdgeInsets.only(bottom: 10.h),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      //comment
+
+                      Container(
+                        height: 70,
+                        width: 150,
+                        child: RoundedButton(
+                          onPressed: () {
+                            context.read<ShoppingTrip>().changeTripLock();
+                            context.read<ShoppingTrip>().setAllCheckFalse();
+                          },
+                          title: (context.watch<ShoppingTrip>().lock == false)
+                              ? "Shopping Mode"
+                              : "Unlock Trip",
+                          color: appOrange,
+                        ),
+                      ),
+
+                      Container(
+                        height: 70,
+                        width: 150,
+                        child: RoundedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, CheckoutScreen.id);
+                            },
+                            title: "Checkout",
+                            color: Colors.green),
+                      ),
+                    ],
+                  ),
+                )
+              : SizedBox.shrink(),
     );
   }
 }
@@ -874,44 +877,6 @@ class _ItemsAdditionState extends State<ItemsAddition> {
         SizedBox(
           height: 4.0,
         ),
-        if (context.read<ShoppingTrip>().host ==
-            context.read<Cowboy>().uuid) ...[
-          Padding(
-            padding: EdgeInsets.only(bottom: 10.h),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                //comment
-
-                Container(
-                  height: 70,
-                  width: 150,
-                  child: RoundedButton(
-                    onPressed: () {
-                      context.read<ShoppingTrip>().changeTripLock();
-                      context.read<ShoppingTrip>().setAllCheckFalse();
-                    },
-                    title: (context.watch<ShoppingTrip>().lock == false)
-                        ? "Shopping Mode"
-                        : "Unlock Trip",
-                    color: appOrange,
-                  ),
-                ),
-
-                Container(
-                  height: 70,
-                  width: 150,
-                  child: RoundedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, CheckoutScreen.id);
-                      },
-                      title: "Checkout",
-                      color: Colors.green),
-                ),
-              ],
-            ),
-          ),
-        ]
       ],
     );
   }
