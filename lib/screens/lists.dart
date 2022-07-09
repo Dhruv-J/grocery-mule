@@ -124,67 +124,11 @@ class _ShoppingTripQueryState extends State<ShoppingTripQuery> {
   }
 }
 
-class ShoppingCollectionQuery extends StatefulWidget {
-  ShoppingCollectionQuery() {}
-  @override
-  _ShoppingCollectionQueryState createState() =>
-      _ShoppingCollectionQueryState();
-}
-
-class _ShoppingCollectionQueryState extends State<ShoppingCollectionQuery> {
-  late Stream<QuerySnapshot> personalTrips;
-  @override
-  void initState() {
-    personalTrips =
-        tripCollection.orderBy('date', descending: true).snapshots();
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // TODO: implement build
-    return StreamBuilder<QuerySnapshot>(
-        stream: personalTrips,
-        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (snapshot.hasError) {
-            return const Text('Something went wrong');
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Text("Loading");
-          }
-          // (context.watch<Cowboy>().shoppingTrips);
-          List<String> sortedList = [];
-          if (snapshot.hasData) {
-            snapshot.data!.docs.forEach((doc) {
-              if (context.watch<Cowboy>().shoppingTrips.contains(doc['uuid'])) {
-                sortedList.add(doc['uuid']);
-                // print(doc['uuid']);
-              }
-            });
-          }
-          // print(sortedList);
-          return SafeArea(
-            child: ListView.builder(
-              //scrollDirection: Axis.vertical,
-              shrinkWrap: true,
-              itemCount: sortedList.length,
-              itemBuilder: (context, int index) {
-                return new ShoppingTripQuery(sortedList[index],
-                    key: Key(sortedList[index]));
-              },
-            ),
-            // ),
-          );
-        });
-  }
-}
-
 class _ListsScreenState extends State<ListsScreen> {
   final _auth = FirebaseAuth.instance;
   final User? curUser = FirebaseAuth.instance.currentUser;
   late Stream<DocumentSnapshot> personalTrip =
       userCollection.doc(curUser!.uid).snapshots();
-  late Stream<QuerySnapshot<Map<String, dynamic>>> tripstream;
   Future<void>? Cowsnapshot;
   List<String> dev = [
     "NYxh0dZXDya9VAdSYnOeWkY2wv83",
@@ -194,10 +138,6 @@ class _ListsScreenState extends State<ListsScreen> {
   @override
   void initState() {
     Cowsnapshot = _loadCurrentCowboy();
-    tripstream = userCollection
-        .doc(curUser!.uid)
-        .collection('shopping_trips')
-        .snapshots();
     super.initState();
   }
 
@@ -361,7 +301,11 @@ class _ListsScreenState extends State<ListsScreen> {
           ),
         ),
         body: StreamBuilder<QuerySnapshot<Object?>>(
-            stream: tripstream,
+            stream: userCollection
+                .doc(curUser!.uid)
+                .collection('shopping_trips')
+                .orderBy('date', descending: true)
+                .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return Text('Something went wrong StreamBuilder');
@@ -369,10 +313,20 @@ class _ListsScreenState extends State<ListsScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return CircularProgressIndicator();
               }
-              // readIn(snapshot.data!);
-              List<String> temptrips = readInShoppingTripsData(snapshot.data!);
-              // print(context.watch<Cowboy>().shoppingTrips);
-              return ShoppingCollectionQuery();
+              return SafeArea(
+                child: ListView.builder(
+                  //scrollDirection: Axis.vertical,
+                  shrinkWrap: true,
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, int index) {
+                    return new ShoppingTripQuery(
+                        snapshot.data!.docs.toList()[index].id,
+                        key: Key(snapshot.data!.docs.toList()[index].id));
+                  },
+                ),
+                // ),
+              );
+              ;
             }),
         floatingActionButton: Container(
           height: 80,

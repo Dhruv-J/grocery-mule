@@ -119,7 +119,9 @@ class _ItemsListState extends State<ItemsList> {
     itemColQuery.docs.forEach((document) {
       String itemID = document['uuid'];
       // TODO maybe don't need this check at all
-      if (itemID != 'dummy') {rawItemList.add(itemID);}
+      if (itemID != 'dummy') {
+        rawItemList.add(itemID);
+      }
     });
     //check if every id from firebase is in local itemUUID
     rawItemList.forEach((itemID) {
@@ -155,7 +157,11 @@ class IndividualItem extends StatefulWidget {
 
 class _IndividualItemState extends State<IndividualItem> {
   late Item curItem;
-  late Stream<DocumentSnapshot> getItemStream = tripCollection.doc(widget.tripID).collection('items').doc(widget.itemID).snapshots();
+  late Stream<DocumentSnapshot> getItemStream = tripCollection
+      .doc(widget.tripID)
+      .collection('items')
+      .doc(widget.itemID)
+      .snapshots();
 
   @override
   void initState() {
@@ -169,16 +175,16 @@ class _IndividualItemState extends State<IndividualItem> {
       return Container();
     }
     return StreamBuilder(
-      stream: getItemStream,
-      builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        }
-        if (snapshot.hasError) return const CircularProgressIndicator();
-        loadItem(snapshot.data!);
-        return simple_item();
-      }
-    );
+        stream: getItemStream,
+        builder:
+            (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox.shrink();
+          }
+          if (snapshot.hasError) return const CircularProgressIndicator();
+          loadItem(snapshot.data!);
+          return simple_item();
+        });
   }
 
   //this function loads stream snapshots into item
@@ -276,7 +282,9 @@ class _IndividualItemState extends State<IndividualItem> {
                     onChanged: (bool? value) {
                       setState(() {
                         curItem.check = value!;
-                        context.read<ShoppingTrip>().changeItemCheck(widget.itemID);
+                        context
+                            .read<ShoppingTrip>()
+                            .changeItemCheck(widget.itemID);
                       });
                     },
                   )
@@ -361,6 +369,7 @@ class _EditListsScreenState extends State<EditListScreen> {
   }
 
   void _queryCurrentTrip(DocumentSnapshot curTrip) {
+    if (curTrip == null) return;
     List<String> bene_uid = [];
     DateTime date = DateTime.now();
     date = (curTrip['date'] as Timestamp).toDate();
@@ -482,10 +491,11 @@ class _EditListsScreenState extends State<EditListScreen> {
       case 2:
         await check_leave(context);
         if (leave_list) {
-          context.read<Cowboy>().removeTrip(context.read<Cowboy>().uuid, context.read<ShoppingTrip>().uuid);
+          context.read<Cowboy>().removeTrip(
+              context.read<Cowboy>().uuid, context.read<ShoppingTrip>().uuid);
           context
               .read<ShoppingTrip>()
-              .removeBeneficiary(context.read<Cowboy>().uuid);
+              .removeBeneficiaries([context.read<Cowboy>().uuid]);
           Navigator.of(context).pop();
         }
     }
@@ -526,12 +536,12 @@ class _EditListsScreenState extends State<EditListScreen> {
             builder:
                 (context, AsyncSnapshot<DocumentSnapshot<Object?>> snapshot) {
               if (snapshot.hasError) {
-                return Text('Something went wrong StreamBuilder');
+                return CircularProgressIndicator();
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return SizedBox.shrink();
               }
-              //readInData(snapshot.data!);
+              if (!snapshot.data!.exists) return CircularProgressIndicator();
               _queryCurrentTrip(snapshot.data!);
               if (!context
                   .watch<ShoppingTrip>()
