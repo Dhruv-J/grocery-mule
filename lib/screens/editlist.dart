@@ -8,17 +8,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:grocery_mule/components/rounded_ button.dart';
 import 'package:grocery_mule/constants.dart';
 import 'package:grocery_mule/dev/collection_references.dart';
 import 'package:grocery_mule/providers/cowboy_provider.dart';
 import 'package:grocery_mule/providers/shopping_trip_provider.dart';
-import 'package:grocery_mule/screens/checkout_screen.dart';
 import 'package:grocery_mule/theme/colors.dart';
 import 'package:grocery_mule/theme/text_styles.dart';
 import 'package:provider/provider.dart';
 
 import '../components/header.dart';
+import '../components/rounded_ button.dart';
+import 'checkout_screen.dart';
 import 'createlist.dart';
 
 typedef StringVoidFunc = void Function(String, int);
@@ -261,8 +261,8 @@ class _IndividualItemState extends State<IndividualItem> {
           ],
         ),
         trailing: (context.read<Cowboy>().uuid ==
-                context.read<ShoppingTrip>().host)
-            ? (context.read<ShoppingTrip>().lock == false)
+                context.watch<ShoppingTrip>().host)
+            ? (context.watch<ShoppingTrip>().lock == false)
                 ? IconButton(
                     icon: Icon(
                       Icons.delete,
@@ -529,6 +529,16 @@ class _EditListsScreenState extends State<EditListScreen> {
             ],
           ),
         ],
+        leading: IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: () {
+              setState(() {
+                context.read<ShoppingTrip>().clearField();
+                context.read<ShoppingTrip>().clearCachedBene();
+                context.read<ShoppingTrip>().clearCachedItem();
+                Navigator.pop(context);
+              });
+            }),
       ),
       body: Container(
         child: StreamBuilder<DocumentSnapshot<Object?>>(
@@ -720,44 +730,55 @@ class _EditListsScreenState extends State<EditListScreen> {
               );
             }),
       ),
-      bottomSheet:
-          (context.read<ShoppingTrip>().host == context.read<Cowboy>().uuid)
-              ? Padding(
-                  padding: EdgeInsets.only(bottom: 10.h),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      //comment
+      bottomSheet: StreamBuilder<DocumentSnapshot<Object?>>(
+          stream: listStream,
+          builder:
+              (context, AsyncSnapshot<DocumentSnapshot<Object?>> snapshot) {
+            if (snapshot.hasError) {
+              return CircularProgressIndicator();
+            }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return SizedBox.shrink();
+            }
+            if (!snapshot.data!.exists) return CircularProgressIndicator();
+            return (snapshot.data!['host'] == context.watch<Cowboy>().uuid)
+                ? Padding(
+                    padding: EdgeInsets.only(bottom: 10.h),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        //comment
 
-                      Container(
-                        height: 70,
-                        width: 150,
-                        child: RoundedButton(
-                          onPressed: () {
-                            context.read<ShoppingTrip>().changeTripLock();
-                            context.read<ShoppingTrip>().setAllCheckFalse();
-                          },
-                          title: (context.watch<ShoppingTrip>().lock == false)
-                              ? "Shopping Mode"
-                              : "Unlock Trip",
-                          color: appOrange,
-                        ),
-                      ),
-
-                      Container(
-                        height: 70,
-                        width: 150,
-                        child: RoundedButton(
+                        Container(
+                          height: 70,
+                          width: 150,
+                          child: RoundedButton(
                             onPressed: () {
-                              Navigator.pushNamed(context, CheckoutScreen.id);
+                              context.read<ShoppingTrip>().changeTripLock();
+                              context.read<ShoppingTrip>().setAllCheckFalse();
                             },
-                            title: "Checkout",
-                            color: Colors.green),
-                      ),
-                    ],
-                  ),
-                )
-              : SizedBox.shrink(),
+                            title: (context.watch<ShoppingTrip>().lock == false)
+                                ? "Shopping Mode"
+                                : "Unlock Trip",
+                            color: appOrange,
+                          ),
+                        ),
+
+                        Container(
+                          height: 70,
+                          width: 150,
+                          child: RoundedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, CheckoutScreen.id);
+                              },
+                              title: "Checkout",
+                              color: Colors.green),
+                        ),
+                      ],
+                    ),
+                  )
+                : SizedBox.shrink();
+          }),
     );
   }
 }

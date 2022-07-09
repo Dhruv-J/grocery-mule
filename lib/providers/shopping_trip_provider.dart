@@ -16,6 +16,7 @@ class ShoppingTrip with ChangeNotifier {
 
   void clearField() {
     _uuid = "";
+    _host = "";
   }
 
   // from user creation screen for metadata
@@ -63,7 +64,7 @@ class ShoppingTrip with ChangeNotifier {
     _description = description;
     _host = host;
     _beneficiaries = beneficiaries;
-    lock = raw_lock as bool;
+    lock = raw_lock;
   }
 
   initializeItemUIDFromDB(List<String> itemUUID) {
