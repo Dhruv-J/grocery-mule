@@ -21,6 +21,43 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'editlist.dart';
 
+class UserName extends StatefulWidget {
+  late final String userUUID;
+  UserName(String userUUID) {
+    this.userUUID = userUUID;
+  }
+
+  @override
+  _UserNameState createState() => _UserNameState();
+}
+
+class _UserNameState extends State<UserName> {
+  late String userUUID;
+  @override
+  void initState() {
+    userUUID = widget.userUUID;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+        stream: userCollection.doc(userUUID).snapshots(),
+        builder:
+            (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+          if (snapshot.hasError) {
+            return const Text('Something went wrong');
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator();
+          }
+          return Text(
+            'Howdy ${snapshot.data!['first_name']}!',
+            style: TextStyle(fontSize: 25, color: Colors.black)
+          );
+        });
+  }
+}
+
 class ListsScreen extends StatefulWidget {
   final _auth = FirebaseAuth.instance;
   final User? curUser = FirebaseAuth.instance.currentUser;
@@ -213,10 +250,7 @@ class _ListsScreenState extends State<ListsScreen> {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Text(
-            'Howdy ${curUser!.displayName!.split(" ")[0]}!',
-            style: TextStyle(fontSize: 24, color: Colors.black),
-          ),
+          title: UserName(curUser!.uid),
           backgroundColor: light_orange,
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarBrightness: Brightness.light,
@@ -252,13 +286,6 @@ class _ListsScreenState extends State<ListsScreen> {
                 onTap: () {
                   //Navigator.pop(context);
                   Navigator.pushNamed(context, UserInfoScreen.id);
-                },
-              ),
-              ListTile(
-                title: const Text('intro screen'),
-                onTap: () {
-                  //Navigator.pop(context);
-                  Navigator.pushNamed(context, IntroScreen.id);
                 },
               ),
               ListTile(
