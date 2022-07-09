@@ -120,7 +120,7 @@ class _ItemsListState extends State<ItemsList> {
       String itemID = document['uuid'];
       // TODO maybe don't need this check at all
       if ((itemID != 'dummy') && (itemID != 'add. fees') && (itemID != "tax")) {
-        //if (itemID != 'add. fees' && itemID == "tax")
+        //if (itemID != 'add. fees' && itemID == "tax
         rawItemList.add(itemID);
       }
     });
@@ -186,7 +186,6 @@ class _IndividualItemState extends State<IndividualItem> {
           }
           if (snapshot.hasError) return const CircularProgressIndicator();
           loadItem(snapshot.data!);
-          print("index: $index , item: ${curItem.name}");
           return simple_item();
         });
   }
@@ -617,8 +616,8 @@ class _EditListsScreenState extends State<EditListScreen> {
                               "Trip Title",
                               style: titleBlack.copyWith(fontSize: 18.sp),
                             ),
-                            trailing: Text('${context.read<ShoppingTrip>().title}')
-                        ),
+                            trailing:
+                                Text('${context.read<ShoppingTrip>().title}')),
                       ),
                     ),
                     Padding(
