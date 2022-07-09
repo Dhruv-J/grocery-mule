@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:grocery_mule/constants.dart';
 import 'package:grocery_mule/dev/collection_references.dart';
 import 'package:grocery_mule/dev/migration.dart';
@@ -11,9 +12,12 @@ import 'package:grocery_mule/providers/cowboy_provider.dart';
 import 'package:grocery_mule/providers/shopping_trip_provider.dart';
 import 'package:grocery_mule/screens/createlist.dart';
 import 'package:grocery_mule/screens/friend_screen.dart';
+import 'package:grocery_mule/screens/intro_screen.dart';
 import 'package:grocery_mule/screens/user_info.dart';
 import 'package:grocery_mule/screens/welcome_screen.dart';
+import 'package:grocery_mule/theme/colors.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'editlist.dart';
 
@@ -69,55 +73,49 @@ class _ShoppingTripQueryState extends State<ShoppingTripQuery> {
               desc_short = desc_short.substring(0, 11) + "...";
             }
 
-            return Container(
-              margin: const EdgeInsets.all(10.0),
-              width: 80,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFf57f17),
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFffab91),
-                    blurRadius: 3,
-                    offset: Offset(3, 6), // Shadow position
-                  ),
-                ],
-              ),
-              child: ListTile(
-                title: Container(
-                  child: Text(
-                    '${title_short}',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 25,
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 5.w),
+              child: Card(
+                elevation: 10,
+                color: appColor,
+                shadowColor: appOrange,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r)),
+                child: ListTile(
+                  title: Container(
+                    child: Text(
+                      '${title_short}',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 25,
+                      ),
                     ),
                   ),
+                  subtitle: Row(children: [
+                    Text(
+                      '${desc_short}\n\n'
+                              '${(snapshot.data!['date'] as Timestamp).toDate().month}' +
+                          '/' +
+                          '${(snapshot.data!['date'] as Timestamp).toDate().day}' +
+                          '/' +
+                          '${(snapshot.data!['date'] as Timestamp).toDate().year}',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 15,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 50,
+                    ),
+                  ]),
+                  onTap: () async {
+                    await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => EditListScreen(listUUID)));
+                  },
+                  isThreeLine: true,
                 ),
-                subtitle: Row(children: [
-                  Text(
-                    '${desc_short}\n\n'
-                            '${(snapshot.data!['date'] as Timestamp).toDate().month}' +
-                        '/' +
-                        '${(snapshot.data!['date'] as Timestamp).toDate().day}' +
-                        '/' +
-                        '${(snapshot.data!['date'] as Timestamp).toDate().year}',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                    ),
-                  ),
-                  SizedBox(
-                    height: 50,
-                  ),
-                ]),
-                onTap: () async {
-                  await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => EditListScreen(listUUID)));
-                },
-                isThreeLine: true,
               ),
             );
           }
@@ -128,7 +126,6 @@ class _ShoppingTripQueryState extends State<ShoppingTripQuery> {
 
 class ShoppingCollectionQuery extends StatefulWidget {
   ShoppingCollectionQuery() {}
-
   @override
   _ShoppingCollectionQueryState createState() =>
       _ShoppingCollectionQueryState();
@@ -155,17 +152,17 @@ class _ShoppingCollectionQueryState extends State<ShoppingCollectionQuery> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Text("Loading");
           }
-          print(context.watch<Cowboy>().shoppingTrips);
+          // (context.watch<Cowboy>().shoppingTrips);
           List<String> sortedList = [];
           if (snapshot.hasData) {
             snapshot.data!.docs.forEach((doc) {
               if (context.watch<Cowboy>().shoppingTrips.contains(doc['uuid'])) {
                 sortedList.add(doc['uuid']);
-                print(doc['uuid']);
+                // print(doc['uuid']);
               }
             });
           }
-          print(sortedList);
+          // print(sortedList);
           return SafeArea(
             child: ListView.builder(
               //scrollDirection: Axis.vertical,
@@ -187,16 +184,20 @@ class _ListsScreenState extends State<ListsScreen> {
   final User? curUser = FirebaseAuth.instance.currentUser;
   late Stream<DocumentSnapshot> personalTrip =
       userCollection.doc(curUser!.uid).snapshots();
+  late Stream<QuerySnapshot<Map<String, dynamic>>> tripstream;
   Future<void>? Cowsnapshot;
   List<String> dev = [
     "NYxh0dZXDya9VAdSYnOeWkY2wv83",
-    "yTWmoo2Qskf3wFcbxaJYUt9qrZM2",
-    "nW7NnPdQGcXtj1775nrLdB1igjG2"
+    "plXPxFNLEMbJclCzNsyJeE61RKT2",
+    "nW7NnPdQGcXtj1775nrLdB1igjG2",
   ];
   @override
   void initState() {
     Cowsnapshot = _loadCurrentCowboy();
-    //personalTrip = userCollection.doc(curUser!.uid).snapshots();
+    tripstream = userCollection
+        .doc(curUser!.uid)
+        .collection('shopping_trips')
+        .snapshots();
     super.initState();
   }
 
@@ -204,6 +205,7 @@ class _ListsScreenState extends State<ListsScreen> {
     final DocumentSnapshot<Object?>? snapshot =
         await (_queryCowboy() as Future<DocumentSnapshot<Object?>?>);
     readInData(snapshot!);
+    // final Stream<QuerySnapshot<Map<String, dynamic>>> tripstream = userCollection.doc(context.read<Cowboy>().uuid).collection('shopping_trips').snapshots();
   }
 
   void readInData(DocumentSnapshot snapshot) {
@@ -212,11 +214,6 @@ class _ListsScreenState extends State<ListsScreen> {
     List<String> friends = [];
     List<String> requests = [];
     // extrapolating data into provider
-    if (!(snapshot['shopping_trips'] as List<dynamic>).isEmpty) {
-      (snapshot['shopping_trips'] as List<dynamic>).forEach((uid) {
-        if (!shoppingTrips.contains(uid)) shoppingTrips.add(uid.trim());
-      });
-    }
     if (!(snapshot['friends'] as List<dynamic>).isEmpty) {
       (snapshot['friends'] as List<dynamic>).forEach((dynamicKey) {
         friends.add(dynamicKey.toString());
@@ -252,6 +249,20 @@ class _ListsScreenState extends State<ListsScreen> {
     } else {
       return null;
     }
+  }
+
+  List<String> readInShoppingTripsData(QuerySnapshot tripshot) {
+    List<String> shopping_trips = [];
+    if (tripshot.docs == null || tripshot.docs.isEmpty) {
+      return [];
+    }
+    tripshot.docs.forEach((element) {
+      if (element.id != 'dummy') {
+        shopping_trips.add(element.id.trim());
+      }
+    });
+    context.read<Cowboy>().setTrips(shopping_trips);
+    return shopping_trips;
   }
 
   @override
@@ -304,6 +315,23 @@ class _ListsScreenState extends State<ListsScreen> {
                 },
               ),
               ListTile(
+                title: const Text('intro screen'),
+                onTap: () {
+                  //Navigator.pop(context);
+                  Navigator.pushNamed(context, IntroScreen.id);
+                },
+              ),
+              ListTile(
+                title: const Text('Report a 🐞'),
+                onTap: () async {
+                  String paypalStr = "https://forms.gle/xHy3ixadwacFuFMi9";
+                  Uri paypal_link = Uri.parse(paypalStr);
+                  if (await canLaunchUrl(paypal_link)) {
+                    launchUrl(paypal_link);
+                  }
+                },
+              ),
+              ListTile(
                 title: const Text('Log Out'), //
                 onTap: () async {
                   var currentUser = FirebaseAuth.instance.currentUser;
@@ -332,19 +360,18 @@ class _ListsScreenState extends State<ListsScreen> {
             ],
           ),
         ),
-        body: StreamBuilder<DocumentSnapshot<Object?>>(
-            stream: personalTrip,
-            builder:
-                (context, AsyncSnapshot<DocumentSnapshot<Object?>> snapshot) {
+        body: StreamBuilder<QuerySnapshot<Object?>>(
+            stream: tripstream,
+            builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return Text('Something went wrong StreamBuilder');
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return CircularProgressIndicator();
               }
-              readInData(snapshot.data!);
-              print(context.watch<Cowboy>().shoppingTrips);
-
+              // readIn(snapshot.data!);
+              List<String> temptrips = readInShoppingTripsData(snapshot.data!);
+              // print(context.watch<Cowboy>().shoppingTrips);
               return ShoppingCollectionQuery();
             }),
         floatingActionButton: Container(
