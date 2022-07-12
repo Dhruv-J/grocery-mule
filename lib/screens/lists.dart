@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:grocery_mule/constants.dart';
 import 'package:grocery_mule/dev/collection_references.dart';
 import 'package:grocery_mule/dev/migration.dart';
@@ -288,6 +289,8 @@ class _ListsScreenState extends State<ListsScreen> {
               ListTile(
                 title: const Text('Report a 🐞'),
                 onTap: () async {
+                  Fluttertoast.showToast(
+                      msg: 'Google Sign in required to upload bug report');
                   String paypalStr = "https://forms.gle/xHy3ixadwacFuFMi9";
                   Uri paypal_link = Uri.parse(paypalStr);
                   if (await canLaunchUrl(paypal_link)) {

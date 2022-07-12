@@ -849,6 +849,8 @@ class _ItemsAdditionState extends State<ItemsAddition> {
                         context.read<ShoppingTrip>().addItem(food);
                         isAdd = false;
                       });
+                    else
+                      Fluttertoast.showToast(msg: 'Item cannot be empty');
                   })),
         ],
       )),
