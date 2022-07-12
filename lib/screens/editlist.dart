@@ -120,7 +120,6 @@ class _ItemsListState extends State<ItemsList> {
       String itemID = document['uuid'];
       // TODO maybe don't need this check at all
       if ((itemID != 'dummy') && (itemID != 'add. fees') && (itemID != "tax")) {
-        //if (itemID != 'add. fees' && itemID == "tax
         rawItemList.add(itemID);
       }
     });
@@ -186,6 +185,7 @@ class _IndividualItemState extends State<IndividualItem> {
           }
           if (snapshot.hasError) return const CircularProgressIndicator();
           loadItem(snapshot.data!);
+          print("index: $index , item: ${curItem.name}");
           return simple_item();
         });
   }
