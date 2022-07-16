@@ -250,6 +250,18 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     _tripDescriptionController = TextEditingController()..text = "";
   }
 
+  Future<double> total_expenditure(String uid) async {
+    double total = 0;
+    QuerySnapshot items =
+        await tripCollection.doc(uid).collection('items').get();
+    items.docs.forEach((doc) {
+      if ((doc.id != 'add. fees') && (doc.id != 'tax')) {
+        total += double.parse(doc['price'].toString());
+      }
+    });
+    return total;
+  }
+
   void _loadCurrentTrip(DocumentSnapshot snapshot) {
     DateTime date = DateTime.now();
     List<String> beneficiaries = <String>[];
@@ -263,7 +275,6 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     friend_bene.forEach((element) {
       beneficiaries.add(element);
     });
-    // setState(() {
     cur_trip.initializeTripFromDB(
       snapshot['uuid'],
       snapshot['title'],
@@ -273,7 +284,6 @@ class _CreateListsScreenState extends State<CreateListScreen> {
       beneficiaries,
       snapshot['lock'] as bool,
     );
-    // });
     print(context.read<ShoppingTrip>().beneficiaries);
   }
 
@@ -601,6 +611,22 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                               if (delete_list) {
                                 if (!newList) {
                                   print('delete');
+                                  DocumentSnapshot user = await userCollection
+                                      .doc(context.read<Cowboy>().uuid)
+                                      .get();
+                                  if (!newList) {
+                                    double cur_total = double.parse(
+                                        user['total expenditure'].toString());
+                                    cur_total += await total_expenditure(
+                                        context.read<ShoppingTrip>().uuid);
+                                    print(cur_total);
+                                    await userCollection
+                                        .doc(context.read<Cowboy>().uuid)
+                                        .update({
+                                      'total expenditure': cur_total,
+                                    });
+                                  }
+                                  //total_expenditure
                                   context
                                       .read<ShoppingTrip>()
                                       .removeStaleTripUUIDS();
