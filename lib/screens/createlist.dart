@@ -250,16 +250,24 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     _tripDescriptionController = TextEditingController()..text = "";
   }
 
-  Future<double> total_expenditure(String uid) async {
-    double total = 0;
+  Future<void> total_expenditure(String uid) async {
+    double trip_total = 0;
     QuerySnapshot items =
         await tripCollection.doc(uid).collection('items').get();
     items.docs.forEach((doc) {
-      if ((doc.id != 'add. fees') && (doc.id != 'tax')) {
-        total += double.parse(doc['price'].toString());
-      }
+      //if ((doc.id != 'add. fees') && (doc.id != 'tax')) {
+      trip_total += double.parse(doc['price'].toString());
+      //}
     });
-    return total;
+    context.read<ShoppingTrip>().beneficiaries.forEach((uid) async {
+      DocumentSnapshot user = await userCollection.doc(uid).get();
+      double cur_total = double.parse(user['total expenditure'].toString());
+      cur_total += trip_total;
+      await userCollection.doc(context.read<Cowboy>().uuid).update({
+        'total expenditure': cur_total,
+      });
+    });
+    return;
   }
 
   void _loadCurrentTrip(DocumentSnapshot snapshot) {
@@ -630,16 +638,8 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                         .doc(context.read<Cowboy>().uuid)
                                         .get();
                                     if (!newList) {
-                                      double cur_total = double.parse(
-                                          user['total expenditure'].toString());
-                                      cur_total += await total_expenditure(
+                                      await total_expenditure(
                                           context.read<ShoppingTrip>().uuid);
-                                      print(cur_total);
-                                      await userCollection
-                                          .doc(context.read<Cowboy>().uuid)
-                                          .update({
-                                        'total expenditure': cur_total,
-                                      });
                                     }
                                     //total_expenditure
                                     context
