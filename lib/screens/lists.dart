@@ -299,6 +299,17 @@ class _ListsScreenState extends State<ListsScreen> {
                 },
               ),
               ListTile(
+                title: const Text('Feature Request'),
+                onTap: () async {
+                  String paypalStr =
+                      "https://docs.google.com/forms/d/e/1FAIpQLSf7gVxRoyMq0C8tuLMdnw4T2hxr8LUgIbZFFWQv2sJFSafndg/viewform";
+                  Uri paypal_link = Uri.parse(paypalStr);
+                  if (await canLaunchUrl(paypal_link)) {
+                    launchUrl(paypal_link);
+                  }
+                },
+              ),
+              ListTile(
                 title: const Text('Log Out'), //
                 onTap: () async {
                   var currentUser = FirebaseAuth.instance.currentUser;
