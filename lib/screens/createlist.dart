@@ -252,17 +252,30 @@ class _CreateListsScreenState extends State<CreateListScreen> {
 
   Future<void> total_expenditure(String uid) async {
     double trip_total = 0;
+    Map<String, double> total_per_user = {};
+    context.read<ShoppingTrip>().beneficiaries.forEach((uid) {
+      total_per_user[uid] = 0;
+    });
     QuerySnapshot items =
         await tripCollection.doc(uid).collection('items').get();
     items.docs.forEach((doc) {
-      //if ((doc.id != 'add. fees') && (doc.id != 'tax')) {
-      trip_total += double.parse(doc['price'].toString());
-      //}
+      if (doc['uuid'] != 'tax' && doc['uuid'] != 'add. fees') {
+        Map<String, dynamic> curSubitems = doc
+            .get(FieldPath(['subitems'])); // get map of subitems for cur item
+        double unit_price = doc['price'] / doc['quantity'];
+        ;
+        curSubitems.forEach((key, quantity) {
+          // add item name & quantity if user UUIDs match & quantity > 0
+          if (curSubitems[key] > 0) {
+            total_per_user[key] = total_per_user[key]! + quantity * unit_price;
+          }
+        });
+      }
     });
     context.read<ShoppingTrip>().beneficiaries.forEach((uid) async {
       DocumentSnapshot user = await userCollection.doc(uid).get();
       double cur_total = double.parse(user['total expenditure'].toString());
-      cur_total += trip_total;
+      cur_total += total_per_user[uid]!;
       await userCollection.doc(context.read<Cowboy>().uuid).update({
         'total expenditure': cur_total,
       });
