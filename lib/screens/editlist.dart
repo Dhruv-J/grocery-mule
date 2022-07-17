@@ -554,9 +554,6 @@ class _EditListsScreenState extends State<EditListScreen> {
                 if (snapshot.hasError) {
                   return CircularProgressIndicator();
                 }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return SizedBox.shrink();
-                }
                 if (!snapshot.data!.exists) return CircularProgressIndicator();
                 _queryCurrentTrip(snapshot.data!);
                 if (!context
@@ -612,7 +609,7 @@ class _EditListsScreenState extends State<EditListScreen> {
                           color: Colors.white,
                           child: ListTile(
                               leading: Icon(
-                                FontAwesomeIcons.userLarge,
+                                FontAwesomeIcons.list,
                                 color: appOrange,
                               ),
                               title: Text(
@@ -766,7 +763,6 @@ class _EditListsScreenState extends State<EditListScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           //comment
-
                           Container(
                             height: 70,
                             width: 150,
@@ -884,7 +880,7 @@ class _ItemsAdditionState extends State<ItemsAddition> {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(vertical: 10.h),
+          padding: EdgeInsets.symmetric(vertical: 5.h),
           child: Divider(
             endIndent: 50,
             indent: 50,
