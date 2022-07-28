@@ -96,7 +96,7 @@ class _IntroScreenState extends State<IntroScreen> {
         PageViewModel(
           title: "Connect with PayPal 💵 \n (or don't)",
           body:
-          "Optionally, we\'ll ask you to add your PayPal.me link when you first create an account - this makes it easier to get paid back at the end of trips.",
+          "Optionally, we\'ll ask you to add your PayPal username when you first create an account - this makes it easier to get paid back at the end of trips.",
           image: _buildImage('paypal.png', 7),
           decoration: pageDecoration,
         ),
