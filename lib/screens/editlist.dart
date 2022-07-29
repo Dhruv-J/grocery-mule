@@ -213,8 +213,8 @@ class _IndividualItemState extends State<IndividualItem> {
               context.watch<ShoppingTrip>().host)
           ? beige
           : (quantity != 0)
-          ? Colors.blueGrey
-          : Colors.red,
+          ? Colors.white
+          : Color(0xffE65F6A),
       key: Key(widget.itemID),
       child: ListTile(
         title: Container(
@@ -223,7 +223,7 @@ class _IndividualItemState extends State<IndividualItem> {
                   ? '${name}'
                   : '${name} (total)',
               style:
-              appFontStyle.copyWith(color: Colors.white, fontSize: 16.sp)),
+              appFontStyle.copyWith(color: Colors.black, fontSize: 16.sp)),
         ),
         subtitle: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -234,7 +234,7 @@ class _IndividualItemState extends State<IndividualItem> {
                   child: IconButton(
                       icon: const Icon(
                         Icons.remove_circle,
-                        color: Colors.white,
+                        color: Colors.black,
                       ),
                       onPressed: () => (setState(() {
                         updateUsrQuantity(context.read<Cowboy>().uuid,
@@ -247,14 +247,14 @@ class _IndividualItemState extends State<IndividualItem> {
                 (context.read<ShoppingTrip>().lock == false)
                     ? '${quantity}'
                     : '${curItem.quantity}',
-                style: appFontStyle.copyWith(color: Colors.white),
+                style: appFontStyle.copyWith(color: Colors.black),
               ),
             ),
             if (context.read<ShoppingTrip>().lock == false) ...[
               Container(
                   child: IconButton(
                       icon: const Icon(Icons.add_circle),
-                      color: Colors.white,
+                      color: Colors.black,
                       onPressed: () {
                         setState(() {
                           updateUsrQuantity(
@@ -270,7 +270,7 @@ class _IndividualItemState extends State<IndividualItem> {
             ? IconButton(
           icon: Icon(
             Icons.delete,
-            color: appColor,
+            color: Colors.black,
           ),
           onPressed: () {
             setState(() {
@@ -445,6 +445,14 @@ class _EditListsScreenState extends State<EditListScreen> {
     }
   }
 
+  String titleTruncate (String ogTitle) {
+    if (ogTitle.length <= 15) {
+      return ogTitle;
+    } else {
+      return ogTitle.substring(0, 13) + '...';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -452,11 +460,11 @@ class _EditListsScreenState extends State<EditListScreen> {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text(
+          title: Text(
             'Edit List',
             style: TextStyle(color: Colors.black),
           ),
-          backgroundColor: light_orange,
+          backgroundColor: appOrange,
           systemOverlayStyle: SystemUiOverlayStyle(
             statusBarBrightness: Brightness.light,
           ),
