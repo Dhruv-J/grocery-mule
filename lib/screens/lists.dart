@@ -1,17 +1,21 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:grocery_mule/constants.dart';
 import 'package:grocery_mule/dev/collection_references.dart';
 import 'package:grocery_mule/dev/migration.dart';
 import 'package:grocery_mule/providers/cowboy_provider.dart';
 import 'package:grocery_mule/providers/shopping_trip_provider.dart';
 import 'package:grocery_mule/screens/createlist.dart';
+import 'package:grocery_mule/screens/email_reauth.dart';
 import 'package:grocery_mule/screens/friend_screen.dart';
 import 'package:grocery_mule/screens/intro_screen.dart';
 import 'package:grocery_mule/screens/paypal_link.dart';
@@ -19,6 +23,7 @@ import 'package:grocery_mule/screens/user_info.dart';
 import 'package:grocery_mule/screens/welcome_screen.dart';
 import 'package:grocery_mule/theme/colors.dart';
 import 'package:provider/provider.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'editlist.dart';
@@ -340,7 +345,7 @@ class _ListsScreenState extends State<ListsScreen> {
     context.read<Cowboy>().clearData();
   }
 
-  void deleteAccountTrips(){
+  Future <void> deleteAccountTrips() async {
     tripCollection.where('beneficiaries', arrayContains: curUser!.uid).get().then((QuerySnapshot querySnapshot) {
       querySnapshot.docs.forEach((doc) {
         // print(doc["title"]);
@@ -355,6 +360,47 @@ class _ListsScreenState extends State<ListsScreen> {
     });
     removeFriends();
     deleteUser();
+  }
+
+  String sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  Future <void> reauthUser() async {
+    String curProviderID = FirebaseAuth.instance.currentUser!.providerData[0].providerId.toString();
+    if(curProviderID == "google.com"){
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      // Obtain the auth details from the request.
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser!.authentication;
+      // Create a new credential.
+      final OAuthCredential googleCredential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(googleCredential);
+    } else if (curProviderID == "password") {
+      Navigator.pushNamed(context, ReauthScreen.id);
+    } else if (curProviderID == "apple.com"){
+      final rawNonce = generateNonce();
+      final nonce = sha256ofString(rawNonce);
+      // Request credential for the currently signed in Apple account.
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+      // Create an `OAuthCredential` from the credential returned by Apple.
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
+      await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(oauthCredential);
+    }
   }
 
   @override
@@ -467,30 +513,15 @@ class _ListsScreenState extends State<ListsScreen> {
                           TextButton(
                               onPressed: () async {
                                 try {
-                                  deleteAccountTrips();
+                                  await reauthUser();
+                                  await deleteAccountTrips();
                                   await FirebaseAuth.instance.currentUser!.delete();
                                   // print(context.read<Cowboy>().uuid),
                                   Navigator.of(context).pop();
                                 } on FirebaseAuthException catch (e) {
                                   if (e.code == 'requires-recent-login') {
                                     // print('The user must reauthenticate before this operation can be executed.');
-                                    AlertDialog(
-                                      title: const Text("Error"),
-                                      content: const Text("Sign out and back in to reauthenticate in order to delete account"),
-                                      actions: <Widget>[
-                                        TextButton(
-                                          onPressed: () => {
-                                            Navigator.of(context).pop(),
-                                          },
-                                          child: const Text("OK"),
-                                        ),
-                                        TextButton(
-                                            onPressed: () => {
-                                              Navigator.of(context).pop(),
-                                            },
-                                            child: const Text("CANCEL")),
-                                      ],
-                                    );
+                                    print("reauth failed");
                                   }
                                 }
                                 // deleteAccountTrips(),
