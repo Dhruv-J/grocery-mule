@@ -473,10 +473,6 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                       color: dark_beige.withOpacity(0.25),
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(12)),
-                                      // border: Border.all(
-                                      //   color: darker_beige,
-                                      //   width: 2,
-                                      // ),
                                     ),
                                     buttonIcon: Icon(
                                       Icons.person,

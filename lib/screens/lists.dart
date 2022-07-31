@@ -302,7 +302,42 @@ class _ListsScreenState extends State<ListsScreen> {
   void deleteBeneTrip(QueryDocumentSnapshot curTrip){
     List<dynamic> trip_benes = curTrip["beneficiaries"];
     trip_benes.remove(curUser!.uid);
+    tripCollection.doc(curTrip["uuid"]).collection('items').get().then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        if(doc["uuid"] != "add. fees" && doc["uuid"] != "tax"){
+          tripCollection.doc(curTrip["uuid"]).collection('items').doc(doc["uuid"]).delete();
+        }
+      });
+    });
     tripCollection.doc(curTrip["uuid"]).update({'beneficiaries': trip_benes});
+  }
+
+  void removeFriends(){
+    context.read<Cowboy>().friends.forEach((friend_uuid) {
+      userCollection.get()
+          .then((QuerySnapshot querySnapshot) {
+        querySnapshot.docs.forEach((doc) {
+          if(doc["uuid"] == friend_uuid){
+            print(doc["first_name"]);
+            List<dynamic> curFriends = doc["friends"];
+            print("BEFORE friends: " + curFriends.toString());
+            curFriends.remove(curUser!.uid);
+            print("AFTER friends: " + curFriends.toString());
+            userCollection.doc(friend_uuid).update({'friends': curFriends});
+          }
+        });
+      });
+    });
+  }
+
+  void deleteUser(){
+    userCollection.doc(curUser!.uid).collection('shopping_trips').doc("dummy").delete();
+    userCollection.doc(curUser!.uid).delete();
+    Navigator.of(context).popUntil((route) {
+      return route.settings.name == WelcomeScreen.id;
+    });
+    Navigator.pushNamed(context, WelcomeScreen.id);
+    context.read<Cowboy>().clearData();
   }
 
   void deleteAccountTrips(){
@@ -318,6 +353,8 @@ class _ListsScreenState extends State<ListsScreen> {
         }
       });
     });
+    removeFriends();
+    deleteUser();
   }
 
   @override
@@ -428,10 +465,36 @@ class _ListsScreenState extends State<ListsScreen> {
                         content: const Text("Are you sure you want to delete your account?"),
                         actions: <Widget>[
                           TextButton(
-                              onPressed: () => {
-                                deleteAccountTrips(),
-                                // print(context.read<Cowboy>().uuid),
-                                Navigator.of(context).pop(),
+                              onPressed: () async {
+                                try {
+                                  deleteAccountTrips();
+                                  await FirebaseAuth.instance.currentUser!.delete();
+                                  // print(context.read<Cowboy>().uuid),
+                                  Navigator.of(context).pop();
+                                } on FirebaseAuthException catch (e) {
+                                  if (e.code == 'requires-recent-login') {
+                                    // print('The user must reauthenticate before this operation can be executed.');
+                                    AlertDialog(
+                                      title: const Text("Error"),
+                                      content: const Text("Sign out and back in to reauthenticate in order to delete account"),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          onPressed: () => {
+                                            Navigator.of(context).pop(),
+                                          },
+                                          child: const Text("OK"),
+                                        ),
+                                        TextButton(
+                                            onPressed: () => {
+                                              Navigator.of(context).pop(),
+                                            },
+                                            child: const Text("CANCEL")),
+                                      ],
+                                    );
+                                  }
+                                }
+                                // deleteAccountTrips(),
+                                // Navigator.of(context).pop(),
                               },
                               child: const Text("DELETE")),
                           TextButton(
@@ -447,14 +510,6 @@ class _ListsScreenState extends State<ListsScreen> {
 
                 },
               ),
-              if (dev.contains(context.watch<Cowboy>().uuid))
-                ListTile(
-                  title: const Text('Dev only'),
-                  onTap: () {
-                    //Navigator.pop(context);
-                    Navigator.pushNamed(context, Migration.id);
-                  },
-                ),
             ],
           ),
         ),
