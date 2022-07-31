@@ -345,7 +345,7 @@ class _ListsScreenState extends State<ListsScreen> {
     context.read<Cowboy>().clearData();
   }
 
-  Future <void> deleteAccountTrips() async {
+  void deleteAccountTrips() {
     tripCollection.where('beneficiaries', arrayContains: curUser!.uid).get().then((QuerySnapshot querySnapshot) {
       querySnapshot.docs.forEach((doc) {
         // print(doc["title"]);
@@ -513,8 +513,8 @@ class _ListsScreenState extends State<ListsScreen> {
                           TextButton(
                               onPressed: () async {
                                 try {
-                                  await reauthUser();
-                                  await deleteAccountTrips();
+                                  // await reauthUser();
+                                  deleteAccountTrips();
                                   await FirebaseAuth.instance.currentUser!.delete();
                                   // print(context.read<Cowboy>().uuid),
                                   Navigator.of(context).pop();
