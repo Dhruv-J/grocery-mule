@@ -291,8 +291,6 @@ class _ListsScreenState extends State<ListsScreen> {
       });
     });
 
-    // remove trip benes?
-
     // remove trip reference for each bene
     trip_benes.forEach((user_uuid) {
       userCollection.doc(user_uuid).collection('shopping_trips').doc(curTrip["uuid"]).delete();
