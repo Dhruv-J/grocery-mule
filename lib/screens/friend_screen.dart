@@ -462,7 +462,6 @@ class _FriendScreenState extends State<FriendScreen>
     if (!(snapshot['friends'] as List<dynamic>).isEmpty) {
       (snapshot['friends'] as List<dynamic>).forEach((dynamicKey) {
         friends.add(dynamicKey.toString().trim());
-        print('added: ' + dynamicKey.toString().trim());
       });
     } else {
       // print('no friends u bum');

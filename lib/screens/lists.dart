@@ -278,6 +278,50 @@ class _ListsScreenState extends State<ListsScreen> {
     return shopping_trips;
   }
 
+  // delete trip from shopping trip collection of all users from current trip
+  void deleteHostTrip(QueryDocumentSnapshot curTrip){
+    List<dynamic> trip_benes = curTrip["beneficiaries"];
+    print("trip benes: " + trip_benes.toString());
+
+    // delete trip items, including dummy, tax, add.fees
+    tripCollection.doc(curTrip["uuid"]).collection('items').get().then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        print(doc["name"]);
+        tripCollection.doc(curTrip["uuid"]).collection('items').doc(doc["uuid"]).delete();
+      });
+    });
+
+    // remove trip benes?
+
+    // remove trip reference for each bene
+    trip_benes.forEach((user_uuid) {
+      userCollection.doc(user_uuid).collection('shopping_trips').doc(curTrip["uuid"]).delete();
+    });
+    // delete list document
+    tripCollection.doc(curTrip["uuid"]).delete();
+  }
+
+  void deleteBeneTrip(QueryDocumentSnapshot curTrip){
+    List<dynamic> trip_benes = curTrip["beneficiaries"];
+    trip_benes.remove(curUser!.uid);
+    tripCollection.doc(curTrip["uuid"]).update({'beneficiaries': trip_benes});
+  }
+
+  void deleteAccountTrips(){
+    tripCollection.where('beneficiaries', arrayContains: curUser!.uid).get().then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        // print(doc["title"]);
+        if(doc["host"] == curUser!.uid){
+          print("HOST of: " + doc["title"]);
+          deleteHostTrip(doc);
+        } else {
+          print("BENE of: " + doc["title"]);
+          deleteBeneTrip(doc);
+        }
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     //print(context.watch<Cowboy>().shoppingTrips);
@@ -373,6 +417,36 @@ class _ListsScreenState extends State<ListsScreen> {
                   if (await canLaunchUrl(pp_link)) {
                     launchUrl(pp_link);
                   }
+                },
+              ),
+              ListTile(
+                title: const Text('Delete Account'),
+                onTap: () async {
+                  return showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text("Confirm"),
+                        content: const Text("Are you sure you want to delete your account?"),
+                        actions: <Widget>[
+                          TextButton(
+                              onPressed: () => {
+                                deleteAccountTrips(),
+                                // print(context.read<Cowboy>().uuid),
+                                Navigator.of(context).pop(),
+                              },
+                              child: const Text("DELETE")),
+                          TextButton(
+                            onPressed: () => {
+                              Navigator.of(context).pop(),
+                            },
+                            child: const Text("CANCEL"),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
                 },
               ),
               if (dev.contains(context.watch<Cowboy>().uuid))
