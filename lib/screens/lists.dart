@@ -279,109 +279,127 @@ class _ListsScreenState extends State<ListsScreen> {
     return shopping_trips;
   }
 
-  // delete trip from shopping trip collection of all users from current trip
-  Future<void> deleteHostTrip(DocumentSnapshot curTrip) async {
-    List<dynamic> trip_benes = curTrip["beneficiaries"];
-    print("trip benes: " + trip_benes.toString());
-
-    // delete trip items, including dummy, tax, add.fees
-    QuerySnapshot items =
-        await tripCollection.doc(curTrip["uuid"]).collection('items').get();
-    items.docs.forEach((doc) async {
-      print(doc["name"]);
-      await tripCollection
-          .doc(curTrip["uuid"])
-          .collection('items')
-          .doc(doc["uuid"])
-          .delete();
+  Future<void> loadItemToProvider() async {
+    QuerySnapshot itemColQuery = await tripCollection.doc(context.read<ShoppingTrip>().uuid).collection('items').get();
+    List<String> rawItemList = [];
+    itemColQuery.docs.forEach((document) {
+      String itemID = document['uuid'];
+      // TODO maybe don't need this check at all
+      if ((itemID != 'dummy') && (itemID != 'add. fees') && (itemID != "tax")) {
+        rawItemList.add(itemID);
+      }
     });
-
-    // remove trip reference for each bene
-    trip_benes.forEach((user_uuid) async {
-      await userCollection
-          .doc(user_uuid)
-          .collection('shopping_trips')
-          .doc(curTrip["uuid"])
-          .delete();
+    //check if every id from firebase is in local itemUUID
+    rawItemList.forEach((itemID) {
+      if (!context.read<ShoppingTrip>().itemUUID.contains(itemID)) {
+        context.read<ShoppingTrip>().itemUUID.add(itemID);
+      }
     });
-    // delete list document
-    await tripCollection.doc(curTrip["uuid"]).delete();
+    List<String> tobeDeleted = [];
+    //check if any local uuid needs to be deleted
+    context.read<ShoppingTrip>().itemUUID.forEach((itemID) {
+      if (!rawItemList.contains(itemID)) {
+        tobeDeleted.add(itemID);
+      }
+    });
+    context
+        .read<ShoppingTrip>()
+        .itemUUID
+        .removeWhere((element) => tobeDeleted.contains(element));
   }
 
-  void deleteBeneTrip(DocumentSnapshot curTrip) async {
-    QuerySnapshot items =
-        await tripCollection.doc(curTrip["uuid"]).collection('items').get();
-    items.docs.forEach((item) async {
-      if (item.id != 'add. fees' && item.id != 'tax') {
-        DocumentSnapshot subitem = await tripCollection
-            .doc(curTrip["uuid"])
-            .collection('items')
-            .doc(item.id)
-            .get();
-        Map<String, dynamic> subitems = {};
-        (subitem['subitems'] as Map<String, dynamic>).forEach((uid, value) {
-          subitems[uid] = int.parse(value.toString());
+  Future<void> deleteAllUserFields() async {
+    // step 1 - delete trip / remove self from trip
+    bool step1 = true;
+    // step 2 - clear and delete shopping_trips reference
+    bool step2 = false;
+    // step 3 - delete friends
+    bool step3 = false;
+    // step 4 - delete self
+    bool step4 = false;
+
+    while (true) {
+      if (step1) {
+        // DELETE TRIP
+        QuerySnapshot trips = await userCollection.doc(curUser!.uid).collection('shopping_trips').get();
+        int total_trips = trips.docs.length; // actual number of trips plus 1 for dummy
+        int count_trips = 0;
+        trips.docs.forEach((trip) async {
+          if (trip.id == 'dummy') {
+            count_trips++;
+          } else {
+            DocumentSnapshot trip_snapshot =
+                await tripCollection.doc(trip.id).get();
+            List<String> benes = [];
+            (trip_snapshot['beneficiaries'] as List<dynamic>)
+                .forEach((bene_uuid) {
+              benes.add(bene_uuid);
+            });
+            context.read<ShoppingTrip>().initializeTripFromDB(
+                trip.id,
+                trip_snapshot['title'],
+                DateTime(2001),
+                trip_snapshot['description'],
+                trip_snapshot['host'],
+                benes,
+                false);
+            await loadItemToProvider();
+            if (trip_snapshot['host'] == curUser!.uid) {
+              await context.read<ShoppingTrip>().deleteTripDB();
+              count_trips++;
+            } else {
+              // remove self from subitems
+              await context
+                  .read<ShoppingTrip>()
+                  .removeBeneficiaries([curUser!.uid]);
+              count_trips++;
+            }
+          }
         });
-        print(subitems);
-        subitems.remove(curUser!.uid);
-        print(subitems);
-        await tripCollection
-            .doc(curTrip["uuid"])
-            .collection('items')
-            .doc(item.id)
-            .update({'subitems': subitems});
+        if (count_trips == total_trips) {
+          print('step 1 finished');
+          step1 = false;
+          step2 = true;
+        }
       }
-    });
-    await tripCollection.doc(curTrip["uuid"]).update({
-      'beneficiaries': FieldValue.arrayRemove([curUser!.uid])
-    });
-  }
-
-  Future<void> removeFriends() async {
-    context.read<Cowboy>().friends.forEach((friend_uuid) async {
-      await userCollection.doc(friend_uuid).update({
-        'friends': FieldValue.arrayRemove([curUser!.uid])
-      });
-    });
-  }
-
-  Future<void> deleteUser() async {
-    QuerySnapshot UserTrips = await userCollection
-        .doc(curUser!.uid)
-        .collection('shopping_trips')
-        .get();
-    UserTrips.docs.forEach((trip) async {
-      await userCollection
-          .doc(curUser!.uid)
-          .collection('shopping_trips')
-          .doc(trip.id)
-          .delete();
-    });
-    userCollection.doc(curUser!.uid).delete();
-    Navigator.of(context).popUntil((route) {
-      return route.settings.name == WelcomeScreen.id;
-    });
-    Navigator.pushNamed(context, WelcomeScreen.id);
-    context.read<Cowboy>().clearData();
-  }
-
-  Future<void> deleteAccountTrips() async {
-    QuerySnapshot trips = await userCollection
-        .doc(curUser!.uid)
-        .collection("shopping_trips")
-        .get();
-    trips.docs.forEach((trip) async {
-      DocumentSnapshot doc = await tripCollection.doc(trip.id).get();
-      if (doc["host"] == curUser!.uid) {
-        print("HOST of: " + doc["title"]);
-        deleteHostTrip(doc);
-      } else {
-        print("BENE of: " + doc["title"]);
-        deleteBeneTrip(doc);
+      if (step2) {
+        // CLEAR AND DELETE SHOPPING TRIPS REFERENCE
+        QuerySnapshot trips = await userCollection.doc(curUser!.uid).collection('shopping_trips').get();
+        int total_trips = trips.docs.length;
+        int count_trips = 0;
+        trips.docs.forEach((trip_uuid) async {
+          await trip_uuid.reference.delete();
+          count_trips++;
+        });
+        if (count_trips == total_trips) {
+          print('step 2 finished');
+          step2 = false;
+          step3 = true;
+        }
       }
-    });
-    await removeFriends();
-    deleteUser();
+      if (step3) {
+        // DELETE FRIENDS
+        context.read<Cowboy>().removeAllFriends();
+        print('step 3 finished');
+        step3 = false;
+        step4 = true;
+      }
+      if (step4) {
+        // DELETE SELF
+        await userCollection.doc(curUser!.uid).delete();
+        Navigator.of(context).popUntil((route) {
+          return route.settings.name == WelcomeScreen.id;
+        });
+        Navigator.pushNamed(context, WelcomeScreen.id);
+        context.read<Cowboy>().clearData();
+        step4 = false;
+        print('step 4 finished');
+      }
+      if (!step1 && !step2 && !step3 && !step4) {
+        print('all steps finished u dirty cuck slut !!!!!!');
+        break;
+      }
+    }
   }
 
   String sha256ofString(String input) {
@@ -541,9 +559,10 @@ class _ListsScreenState extends State<ListsScreen> {
                               onPressed: () async {
                                 try {
                                   // await reauthUser();
-                                  await deleteAccountTrips();
-                                  await FirebaseAuth.instance.currentUser!
-                                      .delete();
+                                  print('STARTED DELETE OF USER');
+                                  await deleteAllUserFields();
+                                  print('STARTED DELETE OF AUTH');
+                                  await FirebaseAuth.instance.currentUser!.delete();
                                   // print(context.read<Cowboy>().uuid),
                                   Navigator.of(context).pop();
                                 } on FirebaseAuthException catch (e) {

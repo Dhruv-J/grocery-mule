@@ -195,13 +195,24 @@ class Cowboy with ChangeNotifier {
   // removes friend, notifies listeners, and updates database
   removeFriend(String friendUUID) {
     print('friends: $_friends');
-    _friends.remove(friendUUID);
+    friends.removeWhere((element) => (element==friendUUID));
+    //_friends.remove(friendUUID);
     print('friends again: $_friends');
     updateCowboyFriendsRemove(friendUUID);
     userCollection.doc(friendUUID).update({
       'friends': FieldValue.arrayRemove([_uuid])
     });
     notifyListeners();
+  }
+
+  removeAllFriends() {
+    friends.forEach((friend_uuid) {
+      updateCowboyFriendsRemove(friend_uuid);
+      userCollection.doc(friend_uuid).update({
+        'friends': FieldValue.arrayRemove([_uuid])
+      });
+    });
+    friends.removeWhere((element) => (friends.contains(element)));
   }
 
   updateCowboyRequestsRemove(String friendUUID) {

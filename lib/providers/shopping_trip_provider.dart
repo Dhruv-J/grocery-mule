@@ -322,12 +322,16 @@ class ShoppingTrip with ChangeNotifier {
 
   deleteTripDB() async {
     print(_uuid);
-    itemUUID.forEach((uid) {
-      tripCollection.doc(_uuid).collection('items').doc(uid).delete();
+    QuerySnapshot items_snapshot = await tripCollection.doc(_uuid).collection('items').get();
+    items_snapshot.docs.forEach((item_doc) {
+      item_doc.reference.delete();
     });
-    tripCollection.doc(_uuid).collection('items').doc('dummy').delete();
-    tripCollection.doc(_uuid).collection('items').doc('tax').delete();
-    tripCollection.doc(_uuid).collection('items').doc('add. fees').delete();
+    // itemUUID.forEach((uid) {
+    //   tripCollection.doc(_uuid).collection('items').doc(uid).delete();
+    // });
+    // tripCollection.doc(_uuid).collection('items').doc('dummy').delete();
+    // tripCollection.doc(_uuid).collection('items').doc('tax').delete();
+    // tripCollection.doc(_uuid).collection('items').doc('add. fees').delete();
     _beneficiaries.forEach((bene) {
       userCollection.doc(bene).collection('shopping_trips').doc(_uuid).delete();
     });

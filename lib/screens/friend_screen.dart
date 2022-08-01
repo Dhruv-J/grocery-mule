@@ -463,7 +463,7 @@ class _FriendScreenState extends State<FriendScreen>
       (snapshot['friends'] as List<dynamic>).forEach((friendName) {
         friends.add(friendName.toString().trim());
       });
-      print('loaded in cowboy friends: $friends');
+      // print('loaded in cowboy friends: $friends');
     } else {
       // print('no friends u bum');
     }
