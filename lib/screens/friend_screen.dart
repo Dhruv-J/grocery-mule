@@ -460,9 +460,10 @@ class _FriendScreenState extends State<FriendScreen>
     List<String> requests = [];
 
     if (!(snapshot['friends'] as List<dynamic>).isEmpty) {
-      (snapshot['friends'] as List<dynamic>).forEach((dynamicKey) {
-        friends.add(dynamicKey.toString().trim());
+      (snapshot['friends'] as List<dynamic>).forEach((friendName) {
+        friends.add(friendName.toString().trim());
       });
+      print('loaded in cowboy friends: $friends');
     } else {
       // print('no friends u bum');
     }
@@ -614,16 +615,6 @@ class _FriendScreenState extends State<FriendScreen>
             SizedBox(
               height: 12.0,
             ),
-            if (context.watch<Cowboy>().friends.length == 0) ...[
-              SizedBox(
-                height: 36.0,
-                child: Text(
-                  'no friends :(',
-                  style: appFontStyle.copyWith(
-                      fontSize: 18.sp, fontWeight: FontWeight.w500),
-                ),
-              )
-            ],
             SizedBox(height: 40,),
             Container(
               child: StreamBuilder<DocumentSnapshot>(
@@ -636,6 +627,16 @@ class _FriendScreenState extends State<FriendScreen>
                       return const CircularProgressIndicator();
                     }
                     loadCowboyProvider(snapshot.data);
+                    if (context.watch<Cowboy>().friends.length == 0) {
+                      return SizedBox(
+                        height: 36.0,
+                        child: Text(
+                          'no friends :(',
+                          style: appFontStyle.copyWith(
+                              fontSize: 18.sp, fontWeight: FontWeight.w500),
+                        ),
+                      );
+                    }
                     return ListView.separated(
                       padding: const EdgeInsets.all(2.0),
                       // scrollDirection: Axis.vertical,
@@ -647,10 +648,9 @@ class _FriendScreenState extends State<FriendScreen>
                           onTap: () {
                             const xButton = Icon(Icons.done, size: 46);
                           },
-                          child:
-                              cowamigo(context.read<Cowboy>().friends[index]),
+                          child: cowamigo(context.read<Cowboy>().friends[index]),
                         );
-                      }, // itemBulider
+                      }, // itemBuilder
                       separatorBuilder: (context, int index) {
                         return SizedBox(
                           height: 5.0,
