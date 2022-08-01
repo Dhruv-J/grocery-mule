@@ -277,6 +277,7 @@ class CheckoutContents extends StatefulWidget {
   
   CheckoutContents(List<String> benes) {
     this.beneficiaries = benes;
+    print('beneficiaries in checkout contents: $benes');
   }
   
   @override
@@ -304,6 +305,8 @@ class _CheckoutContentsState extends State<CheckoutContents> {
             return const CircularProgressIndicator();
           }
 
+          aggre_raw_list = <String, Map<String, int>>{};
+          aggre_item_list = <String, Map<String, int>>{};
           widget.beneficiaries.forEach((bene_uuid) {
             // initialize empty bene mapping to aggre_cleaned_list
             aggre_raw_list[bene_uuid] = {};
@@ -312,17 +315,17 @@ class _CheckoutContentsState extends State<CheckoutContents> {
 
           itemColQuery.data!.docs.forEach((doc) {
             if (doc['uuid'] != 'tax' && doc['uuid'] != 'add. fees') {
-              Map<String, dynamic> curSubitems = doc.get(FieldPath(
-                  ['subitems'])); // get map of subitems for cur item
+              Map<String, dynamic> curSubitems = doc.get(FieldPath(['subitems'])); // get map of subitems for cur item
               //print('curSubitems: ' + curSubitems.toString());
               curSubitems.forEach((key, value) {
                 // add item name & quantity if user UUIDs match & quantity > 0
                 if (curSubitems[key] > 0) {
                   dynamic curItemName = doc.get(FieldPath(['name']));
                   dynamic curItemID = doc.get(FieldPath(['uuid']));
-                  aggre_raw_list[key]![curItemName] = curSubitems[key];
-                  aggre_item_list[key]![curItemID] =
-                  curSubitems[key] = curSubitems[key];
+                  if (aggre_raw_list != null && aggre_raw_list[key] != null && aggre_item_list != null && aggre_item_list[key] != null) {
+                    aggre_raw_list[key]![curItemName] = curSubitems[key];
+                    aggre_item_list[key]![curItemID] = curSubitems[key] = curSubitems[key];
+                  }
                 }
               });
               if (doc['quantity'] != 0) {
