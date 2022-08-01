@@ -318,8 +318,13 @@ class _ListsScreenState extends State<ListsScreen> {
             .collection('items')
             .doc(item.id)
             .get();
-        Map<String, int> subitems = (subitem['subitems'] as Map<String, int>);
+        Map<String, dynamic> subitems = {};
+        (subitem['subitems'] as Map<String, dynamic>).forEach((uid, value) {
+          subitems[uid] = int.parse(value.toString());
+        });
+        print(subitems);
         subitems.remove(curUser!.uid);
+        print(subitems);
         await tripCollection
             .doc(curTrip["uuid"])
             .collection('items')
@@ -332,14 +337,12 @@ class _ListsScreenState extends State<ListsScreen> {
     });
   }
 
-  void removeFriends() async {
+  Future<void> removeFriends() async {
     context.read<Cowboy>().friends.forEach((friend_uuid) async {
       await userCollection.doc(friend_uuid).update({
         'friends': FieldValue.arrayRemove([curUser!.uid])
       });
     });
-    await userCollection.doc(curUser!.uid).update(
-        {'friends': FieldValue.arrayRemove(context.read<Cowboy>().friends)});
   }
 
   Future<void> deleteUser() async {
@@ -377,7 +380,7 @@ class _ListsScreenState extends State<ListsScreen> {
         deleteBeneTrip(doc);
       }
     });
-    removeFriends();
+    await removeFriends();
     deleteUser();
   }
 
