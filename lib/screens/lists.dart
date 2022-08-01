@@ -9,16 +9,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:grocery_mule/constants.dart';
 import 'package:grocery_mule/dev/collection_references.dart';
-import 'package:grocery_mule/dev/migration.dart';
 import 'package:grocery_mule/providers/cowboy_provider.dart';
 import 'package:grocery_mule/providers/shopping_trip_provider.dart';
 import 'package:grocery_mule/screens/createlist.dart';
 import 'package:grocery_mule/screens/email_reauth.dart';
 import 'package:grocery_mule/screens/friend_screen.dart';
-import 'package:grocery_mule/screens/intro_screen.dart';
-import 'package:grocery_mule/screens/paypal_link.dart';
 import 'package:grocery_mule/screens/user_info.dart';
 import 'package:grocery_mule/screens/welcome_screen.dart';
 import 'package:grocery_mule/theme/colors.dart';
@@ -284,59 +280,79 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 
   // delete trip from shopping trip collection of all users from current trip
-  void deleteHostTrip(QueryDocumentSnapshot curTrip){
+  Future<void> deleteHostTrip(DocumentSnapshot curTrip) async {
     List<dynamic> trip_benes = curTrip["beneficiaries"];
     print("trip benes: " + trip_benes.toString());
 
     // delete trip items, including dummy, tax, add.fees
-    tripCollection.doc(curTrip["uuid"]).collection('items').get().then((QuerySnapshot querySnapshot) {
-      querySnapshot.docs.forEach((doc) {
-        print(doc["name"]);
-        tripCollection.doc(curTrip["uuid"]).collection('items').doc(doc["uuid"]).delete();
-      });
+    QuerySnapshot items =
+        await tripCollection.doc(curTrip["uuid"]).collection('items').get();
+    items.docs.forEach((doc) async {
+      print(doc["name"]);
+      await tripCollection
+          .doc(curTrip["uuid"])
+          .collection('items')
+          .doc(doc["uuid"])
+          .delete();
     });
 
     // remove trip reference for each bene
-    trip_benes.forEach((user_uuid) {
-      userCollection.doc(user_uuid).collection('shopping_trips').doc(curTrip["uuid"]).delete();
+    trip_benes.forEach((user_uuid) async {
+      await userCollection
+          .doc(user_uuid)
+          .collection('shopping_trips')
+          .doc(curTrip["uuid"])
+          .delete();
     });
     // delete list document
-    tripCollection.doc(curTrip["uuid"]).delete();
+    await tripCollection.doc(curTrip["uuid"]).delete();
   }
 
-  void deleteBeneTrip(QueryDocumentSnapshot curTrip){
-    List<dynamic> trip_benes = curTrip["beneficiaries"];
-    trip_benes.remove(curUser!.uid);
-    tripCollection.doc(curTrip["uuid"]).collection('items').get().then((QuerySnapshot querySnapshot) {
-      querySnapshot.docs.forEach((doc) {
-        if(doc["uuid"] != "add. fees" && doc["uuid"] != "tax"){
-          tripCollection.doc(curTrip["uuid"]).collection('items').doc(doc["uuid"]).delete();
-        }
-      });
+  void deleteBeneTrip(DocumentSnapshot curTrip) async {
+    QuerySnapshot items =
+        await tripCollection.doc(curTrip["uuid"]).collection('items').get();
+    items.docs.forEach((item) async {
+      if (item.id != 'add. fees' && item.id != 'tax') {
+        DocumentSnapshot subitem = await tripCollection
+            .doc(curTrip["uuid"])
+            .collection('items')
+            .doc(item.id)
+            .get();
+        (subitem['subitems'] as Map<String, int>).remove(curUser!.uid);
+        await tripCollection
+            .doc(curTrip["uuid"])
+            .collection('items')
+            .doc(item.id)
+            .update({'subitems': subitem['subitems']});
+      }
     });
-    tripCollection.doc(curTrip["uuid"]).update({'beneficiaries': trip_benes});
-  }
-
-  void removeFriends(){
-    context.read<Cowboy>().friends.forEach((friend_uuid) {
-      userCollection.get()
-          .then((QuerySnapshot querySnapshot) {
-        querySnapshot.docs.forEach((doc) {
-          if(doc["uuid"] == friend_uuid){
-            print(doc["first_name"]);
-            List<dynamic> curFriends = doc["friends"];
-            print("BEFORE friends: " + curFriends.toString());
-            curFriends.remove(curUser!.uid);
-            print("AFTER friends: " + curFriends.toString());
-            userCollection.doc(friend_uuid).update({'friends': curFriends});
-          }
-        });
-      });
+    await tripCollection.doc(curTrip["uuid"]).update({
+      'beneficiaries': FieldValue.arrayRemove([curUser!.uid])
     });
   }
 
-  void deleteUser(){
-    userCollection.doc(curUser!.uid).collection('shopping_trips').doc("dummy").delete();
+  void removeFriends() async {
+    context.read<Cowboy>().friends.forEach((friend_uuid) async {
+      await userCollection.doc(friend_uuid).update({
+        'friends': FieldValue.arrayRemove([curUser!.uid])
+      });
+    });
+    await userCollection.doc(curUser!.uid).update(
+        {'friends': FieldValue.arrayRemove(context.read<Cowboy>().friends)});
+  }
+
+  Future<void> deleteUser() async {
+    QuerySnapshot UserTrips = await userCollection
+        .doc(curUser!.uid)
+        .collection('shopping_trips')
+        .get();
+    UserTrips.docs.forEach((trip) async {
+      await userCollection
+          .doc(curUser!.uid)
+          .collection('shopping_trips')
+          .doc(trip.id)
+          .delete();
+    });
     userCollection.doc(curUser!.uid).delete();
     Navigator.of(context).popUntil((route) {
       return route.settings.name == WelcomeScreen.id;
@@ -345,18 +361,20 @@ class _ListsScreenState extends State<ListsScreen> {
     context.read<Cowboy>().clearData();
   }
 
-  void deleteAccountTrips() {
-    tripCollection.where('beneficiaries', arrayContains: curUser!.uid).get().then((QuerySnapshot querySnapshot) {
-      querySnapshot.docs.forEach((doc) {
-        // print(doc["title"]);
-        if(doc["host"] == curUser!.uid){
-          print("HOST of: " + doc["title"]);
-          deleteHostTrip(doc);
-        } else {
-          print("BENE of: " + doc["title"]);
-          deleteBeneTrip(doc);
-        }
-      });
+  Future<void> deleteAccountTrips() async {
+    QuerySnapshot trips = await userCollection
+        .doc(curUser!.uid)
+        .collection("shopping_trips")
+        .get();
+    trips.docs.forEach((trip) async {
+      DocumentSnapshot doc = await tripCollection.doc(trip.id).get();
+      if (doc["host"] == curUser!.uid) {
+        print("HOST of: " + doc["title"]);
+        deleteHostTrip(doc);
+      } else {
+        print("BENE of: " + doc["title"]);
+        deleteBeneTrip(doc);
+      }
     });
     removeFriends();
     deleteUser();
@@ -368,9 +386,11 @@ class _ListsScreenState extends State<ListsScreen> {
     return digest.toString();
   }
 
-  Future <void> reauthUser() async {
-    String curProviderID = FirebaseAuth.instance.currentUser!.providerData[0].providerId.toString();
-    if(curProviderID == "google.com"){
+  Future<void> reauthUser() async {
+    String curProviderID = FirebaseAuth
+        .instance.currentUser!.providerData[0].providerId
+        .toString();
+    if (curProviderID == "google.com") {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       // Obtain the auth details from the request.
       final GoogleSignInAuthentication googleAuth =
@@ -380,10 +400,11 @@ class _ListsScreenState extends State<ListsScreen> {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(googleCredential);
+      await FirebaseAuth.instance.currentUser!
+          .reauthenticateWithCredential(googleCredential);
     } else if (curProviderID == "password") {
       Navigator.pushNamed(context, ReauthScreen.id);
-    } else if (curProviderID == "apple.com"){
+    } else if (curProviderID == "apple.com") {
       final rawNonce = generateNonce();
       final nonce = sha256ofString(rawNonce);
       // Request credential for the currently signed in Apple account.
@@ -399,7 +420,8 @@ class _ListsScreenState extends State<ListsScreen> {
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
       );
-      await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(oauthCredential);
+      await FirebaseAuth.instance.currentUser!
+          .reauthenticateWithCredential(oauthCredential);
     }
   }
 
@@ -508,14 +530,16 @@ class _ListsScreenState extends State<ListsScreen> {
                     builder: (BuildContext context) {
                       return AlertDialog(
                         title: const Text("Confirm"),
-                        content: const Text("Are you sure you want to delete your account?"),
+                        content: const Text(
+                            "Are you sure you want to delete your account?"),
                         actions: <Widget>[
                           TextButton(
                               onPressed: () async {
                                 try {
                                   // await reauthUser();
-                                  deleteAccountTrips();
-                                  await FirebaseAuth.instance.currentUser!.delete();
+                                  await deleteAccountTrips();
+                                  await FirebaseAuth.instance.currentUser!
+                                      .delete();
                                   // print(context.read<Cowboy>().uuid),
                                   Navigator.of(context).pop();
                                 } on FirebaseAuthException catch (e) {
@@ -538,7 +562,6 @@ class _ListsScreenState extends State<ListsScreen> {
                       );
                     },
                   );
-
                 },
               ),
             ],
