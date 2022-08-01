@@ -152,13 +152,13 @@ class Cowboy with ChangeNotifier {
     }
   }
 
-  Future<Map<String, String>> fetchFriendFriends(String friend_uuid) async {
+  Future<List<String>> fetchFriendFriends(String friend_uuid) async {
     DocumentSnapshot friendShot = await userCollection.doc(friend_uuid).get();
-    Map<String, String> amigos = {};
-    if (!(friendShot['friends'] as Map<String, dynamic>).isEmpty) {
-      (friendShot['friends'] as Map<String, dynamic>).forEach((uid, entry) {
-        String fields = entry.toString().trim();
-        amigos[uid.trim()] = fields;
+    List<String> amigos = [];
+    if (!(friendShot['friends'] as List<dynamic>).isEmpty) {
+      (friendShot['friends'] as List<dynamic>).forEach((uid) {
+        String fields = uid.toString().trim();
+        amigos.add(fields);
       });
     }
     return amigos;
@@ -210,7 +210,7 @@ class Cowboy with ChangeNotifier {
 
   updateCowboyFriendsRemove(String friendUUID) async {
     userCollection.doc(_uuid).update({'friends': _friends});
-    Map<String, String> amigos = {};
+    List<String> amigos = [];
     amigos = await fetchFriendFriends(friendUUID);
     print('amigos: $amigos');
     amigos.remove(_uuid);

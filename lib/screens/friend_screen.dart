@@ -641,14 +641,15 @@ class _FriendScreenState extends State<FriendScreen>
                       padding: const EdgeInsets.all(2.0),
                       // scrollDirection: Axis.vertical,
                       shrinkWrap: true,
-                      itemCount: context.read<Cowboy>().friends.length,
+                      itemCount: context.watch<Cowboy>().friends.length,
                       controller: ScrollController(),
                       itemBuilder: (BuildContext context, int index) {
                         return GestureDetector(
+                          key: Key(context.watch<Cowboy>().friends[index]),
                           onTap: () {
                             const xButton = Icon(Icons.done, size: 46);
                           },
-                          child: cowamigo(context.read<Cowboy>().friends[index]),
+                          child: cowamigo(context.watch<Cowboy>().friends[index]),
                         );
                       }, // itemBuilder
                       separatorBuilder: (context, int index) {
