@@ -390,6 +390,11 @@ class _ListsScreenState extends State<ListsScreen> {
       if (step4) {
         // DELETE SELF
         await userCollection.doc(curUser!.uid).delete();
+        Navigator.of(context).popUntil((route) {
+          return route.settings.name == WelcomeScreen.id;
+        });
+        Navigator.pushNamed(context, WelcomeScreen.id);
+        context.read<Cowboy>().clearData();
         step4 = false;
         print('step 4 finished');
       }
@@ -561,11 +566,6 @@ class _ListsScreenState extends State<ListsScreen> {
                                   await deleteAllUserFields();
                                   print('STARTED DELETE OF AUTH');
                                   await FirebaseAuth.instance.currentUser!.delete();
-                                  Navigator.of(context).popUntil((route) {
-                                    return route.settings.name == WelcomeScreen.id;
-                                  });
-                                  Navigator.pushNamed(context, WelcomeScreen.id);
-                                  context.read<Cowboy>().clearData();
                                   // print(context.read<Cowboy>().uuid),
                                 } on FirebaseAuthException catch (e) {
                                   if (e.code == 'requires-recent-login') {

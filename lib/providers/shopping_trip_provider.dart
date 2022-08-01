@@ -210,7 +210,9 @@ class ShoppingTrip with ChangeNotifier {
               });
               bene_items.remove(bene_uuid);
               print(bene_items);
-              newItemTotal = newItemTotal - beneItemTotal;
+              if (beneItemTotal != null && beneItemTotal != 0) {
+                newItemTotal = newItemTotal - beneItemTotal;
+              }
               await document.reference
                   .update({"quantity": newItemTotal, "subitems": bene_items});
             })
