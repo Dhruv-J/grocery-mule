@@ -205,14 +205,16 @@ class Cowboy with ChangeNotifier {
     notifyListeners();
   }
 
-  removeAllFriends() {
-    friends.forEach((friend_uuid) {
-      updateCowboyFriendsRemove(friend_uuid);
-      userCollection.doc(friend_uuid).update({
+  removeAllFriends() async {
+    print('current friends: $_friends');
+    _friends.forEach((friend_uuid) async {
+      // print('removing friend with uuid: $friend_uuid');
+      await updateCowboyFriendsRemove(friend_uuid);
+      await userCollection.doc(friend_uuid).update({
         'friends': FieldValue.arrayRemove([_uuid])
       });
     });
-    friends.removeWhere((element) => (friends.contains(element)));
+    _friends.removeWhere((element) => (_friends.contains(element)));
   }
 
   updateCowboyRequestsRemove(String friendUUID) {

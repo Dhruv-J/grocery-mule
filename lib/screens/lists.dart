@@ -53,6 +53,9 @@ class _UserNameState extends State<UserName> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const CircularProgressIndicator();
           }
+          if (snapshot == null || snapshot.data == null) {
+            return Text('Howdy!', style: TextStyle(fontSize: 25, color: Colors.black));
+          }
           return Text('Howdy ${snapshot.data!['first_name']}!',
               style: TextStyle(fontSize: 25, color: Colors.black));
         });
@@ -379,7 +382,7 @@ class _ListsScreenState extends State<ListsScreen> {
       }
       if (step3) {
         // DELETE FRIENDS
-        context.read<Cowboy>().removeAllFriends();
+        await context.read<Cowboy>().removeAllFriends();
         print('step 3 finished');
         step3 = false;
         step4 = true;
@@ -387,11 +390,6 @@ class _ListsScreenState extends State<ListsScreen> {
       if (step4) {
         // DELETE SELF
         await userCollection.doc(curUser!.uid).delete();
-        Navigator.of(context).popUntil((route) {
-          return route.settings.name == WelcomeScreen.id;
-        });
-        Navigator.pushNamed(context, WelcomeScreen.id);
-        context.read<Cowboy>().clearData();
         step4 = false;
         print('step 4 finished');
       }
@@ -563,8 +561,12 @@ class _ListsScreenState extends State<ListsScreen> {
                                   await deleteAllUserFields();
                                   print('STARTED DELETE OF AUTH');
                                   await FirebaseAuth.instance.currentUser!.delete();
+                                  Navigator.of(context).popUntil((route) {
+                                    return route.settings.name == WelcomeScreen.id;
+                                  });
+                                  Navigator.pushNamed(context, WelcomeScreen.id);
+                                  context.read<Cowboy>().clearData();
                                   // print(context.read<Cowboy>().uuid),
-                                  Navigator.of(context).pop();
                                 } on FirebaseAuthException catch (e) {
                                   if (e.code == 'requires-recent-login') {
                                     // print('The user must reauthenticate before this operation can be executed.');
