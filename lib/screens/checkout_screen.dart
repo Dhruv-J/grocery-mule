@@ -272,6 +272,99 @@ class _ItemsPerPersonState extends State<ItemsPerPerson> {
   }
 }
 
+class CheckoutContents extends StatefulWidget {
+  List<String> beneficiaries = [];
+  
+  CheckoutContents(List<String> benes) {
+    this.beneficiaries = benes;
+  }
+  
+  @override
+  _CheckoutContentsState createState() => _CheckoutContentsState();
+}
+
+class _CheckoutContentsState extends State<CheckoutContents> {
+  Map<String, Map<String, int>> aggre_raw_list = {};
+  Map<String, Map<String, int>> aggre_item_list = {};
+  Map<String, double> itemPrices = {};
+  
+  @override
+  Widget build (BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+        stream: tripCollection
+            .doc(context.read<ShoppingTrip>().uuid)
+            .collection('items')
+            .snapshots(),
+        builder: (BuildContext context,
+            AsyncSnapshot<QuerySnapshot> itemColQuery) {
+          if (itemColQuery.hasError) {
+            return const Text('Something went wrong');
+          }
+          if (itemColQuery.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator();
+          }
+
+          widget.beneficiaries.forEach((bene_uuid) {
+            // initialize empty bene mapping to aggre_cleaned_list
+            aggre_raw_list[bene_uuid] = {};
+            aggre_item_list[bene_uuid] = {};
+          });
+
+          itemColQuery.data!.docs.forEach((doc) {
+            if (doc['uuid'] != 'tax' && doc['uuid'] != 'add. fees') {
+              Map<String, dynamic> curSubitems = doc.get(FieldPath(
+                  ['subitems'])); // get map of subitems for cur item
+              //print('curSubitems: ' + curSubitems.toString());
+              curSubitems.forEach((key, value) {
+                // add item name & quantity if user UUIDs match & quantity > 0
+                if (curSubitems[key] > 0) {
+                  dynamic curItemName = doc.get(FieldPath(['name']));
+                  dynamic curItemID = doc.get(FieldPath(['uuid']));
+                  aggre_raw_list[key]![curItemName] = curSubitems[key];
+                  aggre_item_list[key]![curItemID] =
+                  curSubitems[key] = curSubitems[key];
+                }
+              });
+              if (doc['quantity'] != 0) {
+                itemPrices[doc['uuid']] = doc['price'] / doc['quantity'];
+              } else {
+                itemPrices[doc['uuid']] = 0;
+              }
+            } else {
+              // print('price: ${double.parse(doc['price'].toString())} length: ${bene_uuid_list.length}');
+              itemPrices[doc['uuid']] = double.parse(doc['price'].toString());
+            }
+          });
+
+          // print('aggrelist: ' + aggre_raw_list.toString());
+          // print('aggre_item_list: ' + aggre_item_list.toString());
+
+          return Column(
+            children: [
+              SizedBox(
+                height: 10.0,
+              ),
+              ListView.builder(
+                scrollDirection: Axis.vertical,
+                shrinkWrap: true,
+                itemCount: aggre_raw_list.length,
+                itemBuilder: (context, int index) {
+                  return ItemsPerPerson(
+                      itemPrices,
+                      aggre_raw_list.keys.toList()[index],
+                      aggre_raw_list[aggre_raw_list.keys.toList()[index]]!,
+                      aggre_item_list[aggre_item_list.keys.toList()[index]]!,
+                      widget.beneficiaries.length,
+                      key: Key(aggre_raw_list.keys.toList()[index])
+                  );
+                },
+              ),
+            ],
+          );
+        });
+  }
+}
+
 class CheckoutScreen extends StatefulWidget {
   static String id = 'checkout_screen';
 
@@ -280,11 +373,8 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreen extends State<CheckoutScreen> {
-  Map<String, Map<String, int>> aggre_raw_list = {};
-  Map<String, Map<String, int>> aggre_item_list = {};
   Map<String, Map<String, int>> aggre_clean_list = {};
   Map<String, String> paypalLinks = {};
-  Map<String, double> itemPrices = {};
   Map<String, dynamic> beneItems = {};
 
   late CollectionReference itemSubCollection;
@@ -311,92 +401,24 @@ class _CheckoutScreen extends State<CheckoutScreen> {
         ),
         backgroundColor: appOrange,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-          stream: tripCollection
-              .doc(context.read<ShoppingTrip>().uuid)
-              .collection('items')
-              .snapshots(),
-          builder: (BuildContext context,
-              AsyncSnapshot<QuerySnapshot> itemColQuery) {
-            if (itemColQuery.hasError) {
+      body: StreamBuilder<DocumentSnapshot>(
+          stream: tripCollection.doc(context.read<ShoppingTrip>().uuid).snapshots(),
+          builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> tripshot) {
+            if (tripshot.hasError) {
               return const Text('Something went wrong');
             }
-            if (itemColQuery.connectionState == ConnectionState.waiting) {
+            if (tripshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
             }
+            
+            List<String> benes = [];
+            if (tripshot.data != null && tripshot.data!.get('beneficiaries') != null) {
+              (tripshot.data!.get('beneficiaries') as List<dynamic>).forEach((bene_uuid) {
+                benes.add(bene_uuid.toString().trim());
+              });
+            }
 
-            List<String> bene_uuid_list = context.read<ShoppingTrip>().beneficiaries;
-            print('beneficiary list (provider): $bene_uuid_list');
-
-            bool bene_init = true;
-            List<String> bene_uuids = [];
-            itemColQuery.data!.docs.forEach((item) {
-              if (item['uuid'] != 'tax' && item['uuid'] != 'add. fees' && bene_init) {
-                Map<String, dynamic> cur_subitems = item.get('subitems');
-                cur_subitems.forEach((key, value) {
-                  bene_uuids.add(key);
-                });
-                bene_init = false;
-              }
-            });
-            print('beneficiary list (streambuilt): $bene_uuids');
-
-            bene_uuids.forEach((bene_uuid) {
-              // initialize empty bene mapping to aggre_cleaned_list
-              aggre_raw_list[bene_uuid] = {};
-              aggre_item_list[bene_uuid] = {};
-            });
-
-            itemColQuery.data!.docs.forEach((doc) {
-              if (doc['uuid'] != 'tax' && doc['uuid'] != 'add. fees') {
-                Map<String, dynamic> curSubitems = doc.get(FieldPath(
-                    ['subitems'])); // get map of subitems for cur item
-                //print('curSubitems: ' + curSubitems.toString());
-                curSubitems.forEach((key, value) {
-                  // add item name & quantity if user UUIDs match & quantity > 0
-                  if (curSubitems[key] > 0) {
-                    dynamic curItemName = doc.get(FieldPath(['name']));
-                    dynamic curItemID = doc.get(FieldPath(['uuid']));
-                    aggre_raw_list[key]![curItemName] = curSubitems[key];
-                    aggre_item_list[key]![curItemID] =
-                        curSubitems[key] = curSubitems[key];
-                  }
-                });
-                if (doc['quantity'] != 0) {
-                  itemPrices[doc['uuid']] = doc['price'] / doc['quantity'];
-                } else {
-                  itemPrices[doc['uuid']] = 0;
-                }
-              } else {
-                // print('price: ${double.parse(doc['price'].toString())} length: ${bene_uuid_list.length}');
-                itemPrices[doc['uuid']] = double.parse(doc['price'].toString());
-              }
-            });
-
-            // print('aggrelist: ' + aggre_raw_list.toString());
-            // print('aggre_item_list: ' + aggre_item_list.toString());
-
-            return Column(
-              children: [
-                SizedBox(
-                  height: 10.0,
-                ),
-                ListView.builder(
-                  scrollDirection: Axis.vertical,
-                  shrinkWrap: true,
-                  itemCount: aggre_raw_list.length,
-                  itemBuilder: (context, int index) {
-                    return ItemsPerPerson(
-                        itemPrices,
-                        aggre_raw_list.keys.toList()[index],
-                        aggre_raw_list[aggre_raw_list.keys.toList()[index]]!,
-                        aggre_item_list[aggre_item_list.keys.toList()[index]]!,
-                        bene_uuid_list.length,
-                        key: Key(aggre_raw_list.keys.toList()[index]));
-                  },
-                ),
-              ],
-            );
+            return CheckoutContents(benes);
           }),
       bottomSheet: Padding(
         padding: EdgeInsets.only(bottom: 30.h),
