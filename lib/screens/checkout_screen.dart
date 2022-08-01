@@ -262,7 +262,8 @@ class _ItemsPerPersonState extends State<ItemsPerPerson> {
                             color: Colors.white,
                             fontSize: 20.0,
                             fontWeight: FontWeight.w400,
-                          )),
+                          )
+                      ),
                     ]),
                   )
                 ],
@@ -324,14 +325,28 @@ class _CheckoutScreen extends State<CheckoutScreen> {
               return const CircularProgressIndicator();
             }
 
-            List<String> bene_uuid_list =
-                context.read<ShoppingTrip>().beneficiaries;
+            List<String> bene_uuid_list = context.read<ShoppingTrip>().beneficiaries;
+            print('beneficiary list (provider): $bene_uuid_list');
 
-            bene_uuid_list.forEach((bene_uuid) {
+            bool bene_init = true;
+            List<String> bene_uuids = [];
+            itemColQuery.data!.docs.forEach((item) {
+              if (item['uuid'] != 'tax' && item['uuid'] != 'add. fees' && bene_init) {
+                Map<String, dynamic> cur_subitems = item.get('subitems');
+                cur_subitems.forEach((key, value) {
+                  bene_uuids.add(key);
+                });
+                bene_init = false;
+              }
+            });
+            print('beneficiary list (streambuilt): $bene_uuids');
+
+            bene_uuids.forEach((bene_uuid) {
               // initialize empty bene mapping to aggre_cleaned_list
               aggre_raw_list[bene_uuid] = {};
               aggre_item_list[bene_uuid] = {};
             });
+
             itemColQuery.data!.docs.forEach((doc) {
               if (doc['uuid'] != 'tax' && doc['uuid'] != 'add. fees') {
                 Map<String, dynamic> curSubitems = doc.get(FieldPath(
