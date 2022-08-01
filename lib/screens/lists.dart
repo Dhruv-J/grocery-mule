@@ -318,12 +318,13 @@ class _ListsScreenState extends State<ListsScreen> {
             .collection('items')
             .doc(item.id)
             .get();
-        (subitem['subitems'] as Map<String, int>).remove(curUser!.uid);
+        Map<String, int> subitems = (subitem['subitems'] as Map<String, int>);
+        subitems.remove(curUser!.uid);
         await tripCollection
             .doc(curTrip["uuid"])
             .collection('items')
             .doc(item.id)
-            .update({'subitems': subitem['subitems']});
+            .update({'subitems': subitems});
       }
     });
     await tripCollection.doc(curTrip["uuid"]).update({
