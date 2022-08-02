@@ -412,6 +412,7 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 
   Future<void> reauthUser() async {
+    print('reauth: REAUTHING USER');
     String curProviderID = FirebaseAuth
         .instance.currentUser!.providerData[0].providerId
         .toString();
@@ -428,7 +429,17 @@ class _ListsScreenState extends State<ListsScreen> {
       await FirebaseAuth.instance.currentUser!
           .reauthenticateWithCredential(googleCredential);
     } else if (curProviderID == "password") {
-      Navigator.pushNamed(context, ReauthScreen.id);
+      final reauth_info = await Navigator.pushNamed(context, ReauthScreen.id);
+      print('USER CREDS: ' + '${reauth_info}');
+      List<dynamic> user_info = reauth_info as List<dynamic>;
+      try {
+        AuthCredential credential = EmailAuthProvider.credential(email: user_info[0].toString(), password: user_info[1].toString());
+        await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(credential);
+      } on FirebaseAuthException catch (e) {
+        Fluttertoast.showToast(msg: 'Invalid Credentials');
+        throw e;
+      }
+
     } else if (curProviderID == "apple.com") {
       final rawNonce = generateNonce();
       final nonce = sha256ofString(rawNonce);
@@ -448,6 +459,7 @@ class _ListsScreenState extends State<ListsScreen> {
       await FirebaseAuth.instance.currentUser!
           .reauthenticateWithCredential(oauthCredential);
     }
+    print('reauth: FINISHED REAUTHING USER');
   }
 
   @override
@@ -561,7 +573,7 @@ class _ListsScreenState extends State<ListsScreen> {
                           TextButton(
                               onPressed: () async {
                                 try {
-                                  // await reauthUser();
+                                  await reauthUser();
                                   print('STARTED DELETE OF USER');
                                   await deleteAllUserFields();
                                   print('STARTED DELETE OF AUTH');

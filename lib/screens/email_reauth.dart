@@ -104,27 +104,7 @@ class _ReauthScreenState extends State<ReauthScreen> {
                 title: 'Reauthenticate',
                 color: appOrange,
                 onPressed: () async {
-                  try {
-                    AuthCredential credential = EmailAuthProvider.credential(email: email, password: password);
-                    await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(credential);
-                  } on FirebaseAuthException catch (e) {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text(e.message!),
-                          actions: [
-                            TextButton(
-                              child: Text("OK"),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  }
+                  Navigator.pop(context, [email, password]);
                 },
               ),
             )
