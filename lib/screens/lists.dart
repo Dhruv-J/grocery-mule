@@ -349,12 +349,14 @@ class _ListsScreenState extends State<ListsScreen> {
             await loadItemToProvider();
             if (trip_snapshot['host'] == curUser!.uid) {
               await context.read<ShoppingTrip>().deleteTripDB();
+              print('deleting trip where host: ${context.read<ShoppingTrip>().uuid}');
               count_trips++;
             } else {
               // remove self from subitems
               await context
                   .read<ShoppingTrip>()
                   .removeBeneficiaries([curUser!.uid]);
+              print('removing beneficiary where bene: ${context.read<ShoppingTrip>().uuid}');
               count_trips++;
             }
           }

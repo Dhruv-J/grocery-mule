@@ -206,6 +206,13 @@ class Cowboy with ChangeNotifier {
   }
 
   removeAllFriends() async {
+    DocumentSnapshot user_shot = await userCollection.doc(_uuid).get();
+    if (user_shot!=null && user_shot['friends']!=null) {
+      _friends = [];
+      (user_shot['friends'] as List<dynamic>).forEach((element) {
+        _friends.add(element.toString().trim());
+      });
+    }
     print('current friends: $_friends');
     _friends.forEach((friend_uuid) async {
       // print('removing friend with uuid: $friend_uuid');
