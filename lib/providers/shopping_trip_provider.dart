@@ -177,7 +177,6 @@ class ShoppingTrip with ChangeNotifier {
 
   removeBeneficiaries(List<String> bene_uuids) async {
     _beneficiaries.removeWhere((element) => bene_uuids.contains(element));
-    print('beneficiaries to remove: $bene_uuids');
     await removeBeneficiariesFromItems(bene_uuids);
     await tripCollection.doc(_uuid).update({'beneficiaries': FieldValue.arrayRemove(bene_uuids)});
     bene_uuids.forEach((String bene_uuid) async {
@@ -209,7 +208,6 @@ class ShoppingTrip with ChangeNotifier {
       bene_uuids.forEach((bene_uuid) {
         bene_items.remove(bene_uuid);
       });
-      print('beneficiary items: $bene_items');
       await tripCollection.doc(_uuid).collection('items').doc(item).update({'quantity': newtotal, 'subitems': bene_items});
     });
     notifyListeners();
