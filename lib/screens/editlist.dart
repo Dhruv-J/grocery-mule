@@ -343,10 +343,10 @@ class EditListScreen extends StatefulWidget {
   }
 
   @override
-  _EditListsScreenState createState() => _EditListsScreenState();
+  _EditListScreenState createState() => _EditListScreenState();
 }
 
-class _EditListsScreenState extends State<EditListScreen> {
+class _EditListScreenState extends State<EditListScreen> {
   var _tripTitleController;
   var _tripDescriptionController;
   User? curUser = FirebaseAuth.instance.currentUser;

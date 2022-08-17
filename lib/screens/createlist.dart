@@ -8,9 +8,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:grocery_mule/components/header.dart';
 import 'package:grocery_mule/constants.dart';
-import 'package:grocery_mule/dev/collection_references.dart';
+import 'package:grocery_mule/dev/db_ops.dart';
 import 'package:grocery_mule/providers/cowboy_provider.dart';
-//import 'package:grocery_mule/providers/shopping_trip_provider.dart';
 import 'package:grocery_mule/screens/editlist.dart';
 import 'package:grocery_mule/screens/lists.dart';
 import 'package:grocery_mule/theme/colors.dart';
@@ -69,64 +68,52 @@ class _UserNameState extends State<UserName> {
 class CreateListScreen extends StatefulWidget {
   final _auth = FirebaseAuth.instance;
   static String id = 'create_list_screen';
-  late String trip_uuid;
-  late String initTitle;
 
-  late String initDescription;
-
-  late DateTime initDate;
-  late bool newList;
+  late String tripUUID;
+  String title = '';
+  String description = '';
+  DateTime date = DateTime.utc(1969, 7, 20); // moon landing date as a checker
+  List<String> beneficiaries = [];
+  bool newList = false;
 
   //createList has the ids
   //when createList has a list that's already filled
   //keep a field of the original id, but generate a new id
   //in the return variable
-  CreateListScreen(bool newList, String trip_id) {
-    this.newList = newList;
-    trip_uuid = trip_id;
+  CreateListScreen(bool newList, String tripUuid) {
+    this.tripUUID = tripUuid;
+    if(tripUuid=='dummy') {
+      this.newList = true;
+    }
   }
 
   @override
-  _CreateListsScreenState createState() => _CreateListsScreenState();
+  _CreateListScreenState createState() => _CreateListScreenState();
 }
 
-class _CreateListsScreenState extends State<CreateListScreen> {
-  final User? curUser = FirebaseAuth.instance.currentUser;
-  late bool newList;
-  //////////////////////
+class _CreateListScreenState extends State<CreateListScreen> {
   TextEditingController _tripTitleController = TextEditingController();
   TextEditingController _tripDescriptionController = TextEditingController();
   final String hostUUID = FirebaseAuth.instance.currentUser!.uid;
-  final String? hostFirstName = FirebaseAuth.instance.currentUser!.displayName;
-  //Map<String,Item_front_end> frontend_list = {}; // name to frontend item
+
   bool isAdd = false;
   bool delete_list = false;
   bool invite_guest = false;
-  String newTitle = '';
-  String newDesc = '';
-  List<String> old_benes = [];
-  List<String> friend_bene = [];
-  //List<String> selected_friend = [];
-  Map<String, String> friendsName = {};
-  late DateTime localTime;
   bool tripCreated = false;
-  bool dateEdited = false;
-  bool titleEdited = false;
-  bool descEdited = false;
+
+  List<String> addedBeneficiaries = [];
+  List<String> removedBeneficiaries = [];
+  Map<String, String> friendsName = {};
+
   late Future<DocumentSnapshot> tripFuture;
 
   @override
   void initState() {
-    tripFuture = tripCollection.doc(widget.trip_uuid).get();
-    newList = widget.newList;
-    if (widget.trip_uuid != "dummy") {
-      _tripTitleController = TextEditingController(text: '');
-      _tripDescriptionController = TextEditingController(text: '');
-      newList = false;
-      //selected_friend = context.read<ShoppingTrip>().beneficiaries;
-    } else {
-      newList = true;
-      localTime = DateTime.now();
+    tripFuture = tripDocSnapshot(widget.tripUUID);
+    _tripTitleController = TextEditingController(text: '');
+    _tripDescriptionController = TextEditingController(text: '');
+    if (widget.tripUUID == "dummy") {
+      widget.date = DateTime.now();
     }
     super.initState();
   }
@@ -134,7 +121,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
   Future<void> total_expenditure(String uid) async {
     double trip_total = 0;
     Map<String, double> total_per_user = {};
-    friend_bene.forEach((uid) {
+    widget.beneficiaries.forEach((uid) {
       total_per_user[uid] = 0;
     });
     QuerySnapshot items =
@@ -153,13 +140,13 @@ class _CreateListsScreenState extends State<CreateListScreen> {
         });
       } else {
         double unit_price =
-            double.parse(doc['price'].toString()) / friend_bene.length;
-        friend_bene.forEach((key) {
+            double.parse(doc['price'].toString()) / widget.beneficiaries.length;
+        widget.beneficiaries.forEach((key) {
           total_per_user[key] = total_per_user[key]! + unit_price;
         });
       }
     });
-    friend_bene.forEach((uid) async {
+    widget.beneficiaries.forEach((uid) async {
       DocumentSnapshot user = await userCollection.doc(uid).get();
       double cur_total = double.parse(user['total expenditure'].toString());
       cur_total += total_per_user[uid]!;
@@ -170,142 +157,64 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     return;
   }
 
-  void _loadCurrentTrip(DocumentSnapshot snapshot) {
-    DateTime date = DateTime.now();
-    date = (snapshot.data() as Map<String, dynamic>)['date'].toDate();
-    if (!dateEdited) {
-      localTime = date;
+  void _loadTripFields(DocumentSnapshot tripSnapshot) {
+    // if title hasn't been updated yet
+    if (widget.title=='') {
+      try {
+        widget.title = getTitle(tripSnapshot);
+        _tripTitleController = TextEditingController(text: widget.title);
+      } catch(e) {
+        print('error getting title: ${e.toString()}');
+        widget.title = ' '; // space so that this doesn't keep getting called
+      }
     }
-    if (!titleEdited) {
-      _tripTitleController = TextEditingController(text: snapshot['title']);
-      newTitle = snapshot['title'];
+    // if description hasn't been updated yet
+    if (widget.description=='') {
+      try {
+        widget.description = getDescription(tripSnapshot);
+        _tripDescriptionController = TextEditingController(text: widget.description);
+      } catch(e) {
+        print('error getting description: ${e.toString()}');
+        widget.description = ' '; // space so that this doesn't keep getting called
+      }
     }
-    if (!descEdited) {
-      _tripDescriptionController =
-          TextEditingController(text: snapshot['description']);
-      newDesc = snapshot['description'];
+    // if date hasn't been updated yet
+    if (widget.date==DateTime.utc(1969, 7, 20)) {
+      try {
+        widget.date = getDate(tripSnapshot);
+      } catch(e) {
+        print('error getting date: ${e.toString()}');
+        widget.date = DateTime.now(); // current date so that this doesn't keep getting called
+      }
     }
-    (snapshot['beneficiaries'] as List<dynamic>).forEach((uid) {
-      friend_bene.add(uid);
-      old_benes.add(uid);
-    });
-  }
-
-  removeBeneficiaries(List<String> bene_uuids) async {
-    old_benes.removeWhere((element) => bene_uuids.contains(element));
-    await removeBeneficiariesFromItems(bene_uuids);
-    await tripCollection
-        .doc(widget.trip_uuid)
-        .update({'beneficiaries': FieldValue.arrayRemove(bene_uuids)});
-    bene_uuids.forEach((String bene_uuid) async {
-      await userCollection
-          .doc(bene_uuid)
-          .collection('shopping_trips')
-          .doc(widget.trip_uuid)
-          .delete();
-    });
-  }
-
-  removeBeneficiariesFromItems(List<String> bene_uuids) async {
-    QuerySnapshot items_shot =
-        await tripCollection.doc(widget.trip_uuid).collection('items').get();
-    List<String> itemUUID = [];
-    if (items_shot.docs != null && items_shot.docs.isNotEmpty) {
-      items_shot.docs.forEach((item_uuid) {
-        if (item_uuid.id.trim() != 'tax' &&
-            item_uuid.id.trim() != 'add. fees') {
-          itemUUID.add(item_uuid.id.trim());
-        }
-      });
+    // if beneficiaries haven't been updated yet
+    if (widget.beneficiaries.isEmpty) {
+      try {
+        widget.beneficiaries = getBeneficiaries(tripSnapshot);
+      } catch(e) {
+        print('error getting beneficiaries: ${e.toString()}');
+        widget.beneficiaries = []; // leave empty in case no beneficiaries
+      }
     }
-    itemUUID.forEach((item) async {
-      DocumentSnapshot item_shot = await tripCollection
-          .doc(widget.trip_uuid)
-          .collection('items')
-          .doc(item)
-          .get();
-      int newtotal = 0;
-      Map<String, int> bene_items = <String, int>{};
-      (item_shot['subitems'] as Map<String, dynamic>).forEach((uuid, quantity) {
-        bene_items[uuid] = int.parse(quantity.toString());
-        if (!bene_uuids.contains(uuid)) {
-          newtotal += int.parse(quantity.toString());
-        }
-      });
-      bene_uuids.forEach((bene_uuid) {
-        bene_items.remove(bene_uuid);
-      });
-      await tripCollection
-          .doc(widget.trip_uuid)
-          .collection('items')
-          .doc(item)
-          .update({'quantity': newtotal, 'subitems': bene_items});
-    });
-  }
-
-  addBeneficiary(List<String> addList) async {
-    addList.forEach((String bene_uuid) async {
-      await userCollection
-          .doc(bene_uuid)
-          .collection('shopping_trips')
-          .doc(widget.trip_uuid)
-          .set({'date': localTime});
-    });
-    await tripCollection
-        .doc(widget.trip_uuid)
-        .update({'beneficiaries': FieldValue.arrayUnion(addList)});
-    //add bene to every item document
-    QuerySnapshot items_shot =
-        await tripCollection.doc(widget.trip_uuid).collection('items').get();
-    List<String> itemUUID = [];
-    if (items_shot.docs != null && items_shot.docs.isNotEmpty) {
-      items_shot.docs.forEach((item_uuid) {
-        if (item_uuid.id.trim() != 'tax' &&
-            item_uuid.id.trim() != 'add. fees') {
-          itemUUID.add(item_uuid.id.trim());
-        }
-      });
-    }
-    itemUUID.forEach((item) async {
-      Map<String, int> bene_items = <String, int>{};
-      //add back previous user
-      addList.forEach((bene_uuid) async {
-        // bene_items[bene_uuid] = 0;
-        await tripCollection
-            .doc(widget.trip_uuid)
-            .collection('items')
-            .doc(item)
-            .update({'subitems.$bene_uuid': 0});
-      });
-      print(widget.trip_uuid);
-    });
   }
 
   Future<void> updateGridView(bool new_trip) async {
     if (new_trip) {
-      friend_bene.add(hostUUID);
-      print('selected friends: $friend_bene');
-      /*
-      await context.read<ShoppingTrip>().initializeTrip(
-          context.read<ShoppingTrip>().title,
-          context.read<ShoppingTrip>().date,
-          context.read<ShoppingTrip>().description,
-          friend_bene,
-          curUser!.uid);
-       */
+      widget.beneficiaries.add(hostUUID);
+      // print('selected friends: ${widget.beneficiaries}');
 
       var tripId = Uuid().v4();
-      widget.trip_uuid = tripId;
+      widget.tripUUID = tripId;
       await context
           .read<Cowboy>()
-          .addTrip(context.read<Cowboy>().uuid, tripId, localTime);
+          .addTrip(context.read<Cowboy>().uuid, tripId, widget.date);
       await tripCollection.doc(tripId).set({
         'uuid': tripId,
-        'title': newTitle,
-        'date': localTime,
-        'description': newDesc,
-        'host': curUser!.uid,
-        'beneficiaries': friend_bene,
+        'title': widget.title,
+        'date': widget.date,
+        'description': widget.description,
+        'host': hostUUID,
+        'beneficiaries': widget.beneficiaries,
         'lock': false,
       });
       await tripCollection
@@ -318,65 +227,32 @@ class _CreateListsScreenState extends State<CreateListScreen> {
           .collection("items")
           .doc("add. fees")
           .set({'price': "0.00", 'uuid': 'add. fees', 'name': 'add. fees'});
-      friend_bene.remove(hostUUID);
-      for (var friend in friend_bene) {
-        //context.read<ShoppingTrip>().addBeneficiary(friend, true);
-        context.read<Cowboy>().addTrip(friend, tripId, localTime);
+      widget.beneficiaries.remove(hostUUID);
+      for (var friend in widget.beneficiaries) {
+        context.read<Cowboy>().addTrip(friend, tripId, widget.date);
         //addTripToBene(String bene_uuid, String trip_uuid)
       }
       tripCreated = true;
     } else {
-      List<String> removeList = [];
-      old_benes.forEach((old_bene) {
-        if (!friend_bene.contains(old_bene) &&
-            old_bene != context.read<Cowboy>().uuid) {
-          removeList.add(old_bene);
-        }
-      });
+      removeBeneficiaries(removedBeneficiaries, widget.tripUUID);
+      addBeneficiaries(addedBeneficiaries, widget.tripUUID, widget.date);
 
-      removeBeneficiaries(removeList);
-      // print('friend bene in updategridview: $friend_bene');
-      List<String> addList = [];
-      //check if new bene need to be added
-      for (var friend in friend_bene) {
-        if (!old_benes.contains(friend)) {
-          addList.add(friend);
-        }
-      }
-      print(addList);
-      addBeneficiary(addList);
-      tripCollection.doc(widget.trip_uuid).update(
-          {'title': newTitle, 'date': localTime, 'description': newDesc});
-      friend_bene.forEach((user) {
+      tripCollection.doc(widget.tripUUID).update(
+          {'title': widget.title, 'date': widget.date, 'description': widget.description});
+      widget.beneficiaries.forEach((user) {
         userCollection
             .doc(user)
             .collection('shopping_trips')
-            .doc(widget.trip_uuid)
-            .update({'date': localTime});
+            .doc(widget.tripUUID)
+            .update({'date': widget.date});
       });
     }
-  }
-
-  deleteTripDB() async {
-    QuerySnapshot items_snapshot =
-        await tripCollection.doc(widget.trip_uuid).collection('items').get();
-    items_snapshot.docs.forEach((item_doc) {
-      item_doc.reference.delete();
-    });
-    friend_bene.forEach((bene) {
-      userCollection
-          .doc(bene)
-          .collection('shopping_trips')
-          .doc(widget.trip_uuid)
-          .delete();
-    });
-    tripCollection.doc(widget.trip_uuid).delete();
   }
 
   _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
         context: context,
-        initialDate: localTime,
+        initialDate: widget.date,
         firstDate: DateTime(2022),
         lastDate: DateTime(2050),
         builder: (context, child) => Theme(
@@ -387,11 +263,12 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                       onSurface: Colors.black)),
               child: child!,
             ));
-    if (picked != null && picked != localTime) {
+    if (picked != null && picked != widget.date) {
       setState(() {
-        localTime = picked;
+        // localTime = picked;
+        widget.date = picked;
       });
-      print('local time after date pick: $localTime');
+      // print('local time after date pick: ${widget.date}');
     }
   }
 
@@ -410,7 +287,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: (newList)
+          title: (widget.newList)
               ? const Text(
                   'Create List',
                   style: TextStyle(color: Colors.black),
@@ -429,23 +306,27 @@ class _CreateListsScreenState extends State<CreateListScreen> {
         ),
         body: FutureBuilder<DocumentSnapshot>(
             future: tripFuture,
-            builder: (BuildContext context,
-                AsyncSnapshot<DocumentSnapshot> snapshot) {
+            builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
               if (snapshot.hasError) {
                 return const Text('Something went wrong');
               } else if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: const CircularProgressIndicator());
               }
               if (snapshot.data!.exists) {
-                _loadCurrentTrip(snapshot.data!);
+                // _loadCurrentTrip(snapshot.data!);
+                _loadTripFields(snapshot.data!);
+                // print('LIST META GOTTEN:\n'
+                //     'title: ${widget.title}\n'
+                //     'description: ${widget.description}\n'
+                //     'date: ${widget.date}\n'
+                //     'beneficiaries: ${widget.beneficiaries}\n');
               }
 
               return Padding(
                 padding: EdgeInsets.all(15.0),
                 child: Column(
                   children: [
-                    // list name
-
+                    // friends card
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r)),
@@ -478,11 +359,12 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                       document['uuid'],
                                       document['first_name']));
                                 });
+                                // print('beneficiaries: ${widget.beneficiaries}');
 
                                 return MultiSelectChipField(
                                   key: GlobalKey(),
                                   items: friends,
-                                  initialValue: old_benes,
+                                  initialValue: widget.beneficiaries,
                                   title: Text(
                                     'Friends',
                                     style: appFontStyle.copyWith(
@@ -494,23 +376,21 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                     borderRadius:
                                         BorderRadius.all(Radius.circular(22)),
                                   ),
-                                  // buttonIcon: Icon(
-                                  //   Icons.person,
-                                  //   color: Colors.black,
-                                  // ),
-                                  // buttonText: Text(
-                                  //   'Selected Friends',
-                                  //   style: appFontStyle.copyWith(
-                                  //       color: Colors.black),
-                                  // ),
                                   onTap: (results) {
-                                    print(results.toList());
-                                    friend_bene = results
+                                    // print('new bene results: ${results.toList()}');
+                                    // print('old bene results: ${widget.beneficiaries}');
+                                    removedBeneficiaries.addAll(widget.beneficiaries.where((beneUUID)
+                                      => !results.toList().contains(beneUUID)).toList());
+                                    addedBeneficiaries.addAll(results.map((e) => e.toString()).toList().where((beneUUID)
+                                      => !widget.beneficiaries.contains(beneUUID)).toList());
+                                    print('added beneficiaries: $addedBeneficiaries');
+                                    print('removed beneficiares: $removedBeneficiaries');
+                                    widget.beneficiaries = results
                                         .map((e) => e.toString())
                                         .toList()
                                         .toSet()
                                         .toList();
-                                    print('updated benes: $friend_bene');
+                                    // print('updated benes: ${widget.beneficiaries}');
                                   },
                                 );
                               }),
@@ -518,6 +398,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                       ),
                     ),
 
+                    // trip details
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: HomeHeader(
@@ -526,7 +407,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                           textColor: Colors.white),
                     ),
 
-                    // spacer
+                    // title editor
                     Row(
                       children: [
                         Expanded(
@@ -546,9 +427,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                             input: TextInputType.text,
                             secureText: false,
                             onChanged: (value) {
-                              newTitle = value;
-                              titleEdited = true;
-                              // print('title is now: ${newTitle}');
+                              widget.title = value;
                             },
                             suffix: Container(),
                             onTap1: () {},
@@ -580,8 +459,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                             input: TextInputType.text,
                             secureText: false,
                             onChanged: (value) {
-                              newDesc = value;
-                              descEdited = true;
+                              widget.description = value;
                             },
                             suffix: Container(),
                             onTap1: () {},
@@ -602,10 +480,8 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                         Row(
                           children: [
                             Text(
-                              'Date:  ' +
-                                  '${localTime.toString()}'
-                                      .split(' ')[0]
-                                      .replaceAll('-', '/'),
+                              // 'Date:  ' + '${localTime.toString()}'.split(' ')[0].replaceAll('-', '/'),
+                              'Date:  ' + '${widget.date.toString()}'.split(' ')[0].replaceAll('-', '/'),
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w400,
@@ -618,7 +494,6 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                 color: appOrange,
                               ),
                               onPressed: () {
-                                dateEdited = true;
                                 _selectDate(context);
                               },
                             ),
@@ -640,21 +515,17 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                             buttonColor: Colors.green,
                             textColor: Colors.white,
                             onPressed: () async {
-                              if (newTitle != '') {
-                                print('pre updategridview date: $localTime');
-                                await updateGridView(newList);
+                              if (widget.title != '' && widget.title != ' ') {
+                                print('beneficiaries: ${widget.beneficiaries}');
+                                await updateGridView(widget.newList);
                                 Navigator.pop(context);
-                                if (newList) {
+                                if (widget.newList) {
                                   if (tripCreated) {
                                     // print('SUPER MAX MAX MAX SUPER MAX SUPER MAX');
-                                    print(
-                                        'trip uuid before nav push: ${widget.trip_uuid}');
                                     Navigator.push(
                                         context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                EditListScreen(
-                                                    widget.trip_uuid)));
+                                        MaterialPageRoute(builder: (context) => EditListScreen(widget.tripUUID))
+                                    );
                                   }
                                 }
                               } else {
@@ -662,7 +533,7 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                                     msg: 'List name cannot be empty');
                               }
                             },
-                            text: (newList) ? 'Create List' : 'Save Changes',
+                            text: (widget.newList) ? 'Create List' : 'Save Changes',
                           ),
                         ),
                         Spacer(),
@@ -679,9 +550,10 @@ class _CreateListsScreenState extends State<CreateListScreen> {
                             onPressed: () async {
                               await check_delete(context);
                               if (delete_list) {
-                                if (!newList) {
-                                  await total_expenditure(widget.trip_uuid);
-                                  deleteTripDB();
+                                if (!widget.newList) {
+                                  // TODO may not need vvv possible to safely delete
+                                  await total_expenditure(widget.tripUUID);
+                                  deleteTripDB(widget.tripUUID, widget.beneficiaries);
                                 }
                                 Navigator.of(context).popUntil((route) {
                                   return route.settings.name == ListsScreen.id;
